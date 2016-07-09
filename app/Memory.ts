@@ -34,16 +34,16 @@ export class Memory implements IMemory {
 
     public GetByte(offset: number): number {
         let content: number = this._memory[offset];
-        this._readingByte.dispatch(new AddressEventArgs(offset, content));
+        this._readingByte.dispatch(offset, content);
         return content;
     }
 
     public SetByte(offset: number, value: number): void {
         if (this._locked[offset]) {
-            this._invalidWriteAttempt.dispatch(new AddressEventArgs(offset, value));
+            this._invalidWriteAttempt.dispatch(offset, value);
         } else {
             this._memory[offset] = value;
-            this._writingByte.dispatch(new AddressEventArgs(offset, value));
+            this._writingByte.dispatch(offset, value);
         }
     }
 

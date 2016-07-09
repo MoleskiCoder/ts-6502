@@ -2,7 +2,6 @@
 
 import {System6502} from "./system6502";
 import {Configuration} from "./Configuration";
-import {AddressEventArgs} from "./AddressEventArgs";
 
 export class Controller {
 
@@ -87,9 +86,9 @@ export class Controller {
         this._finishTime = Date.now();
     }
 
-    private Processor_ExecutingInstruction(e: AddressEventArgs): void {
+    private Processor_ExecutingInstruction(address: number, cell: number): void {
 
-        if (this._configuration.StopAddressEnabled && this._configuration.StopAddress === e.Address) {
+        if (this._configuration.StopAddressEnabled && this._configuration.StopAddress === address) {
             this._processor.Proceed = false;
         }
 
@@ -101,27 +100,27 @@ export class Controller {
             }
         }
 
-        if (this._configuration.StopBreak && this._configuration.BreakInstruction === e.Cell) {
+        if (this._configuration.StopBreak && this._configuration.BreakInstruction === cell) {
             this._processor.Proceed = false;
         }
     }
 
-    private Processor_WritingByte(e: AddressEventArgs): void {
-        if (e.Address === this._configuration.OutputAddress) {
-            this.HandleByteWritten(e.Cell);
+    private Processor_WritingByte(address: number, cell: number): void {
+        if (address === this._configuration.OutputAddress) {
+            this.HandleByteWritten(cell);
         }
     }
 
-    private Processor_ReadingByte(e: AddressEventArgs): void {
-        if (e.Address === this._configuration.InputAddress) {
-            if (e.Cell !== 0x0) {
-                this.HandleByteRead(e.Cell);
-                this._processor.SetByte(e.Address, 0x0);
+    private Processor_ReadingByte(address: number, cell: number): void {
+        if (address === this._configuration.InputAddress) {
+            if (cell !== 0x0) {
+                this.HandleByteRead(cell);
+                this._processor.SetByte(address, 0x0);
             }
         }
     }
 
-    private Processor_InvalidWriteAttempt(e: AddressEventArgs): void {
+    private Processor_InvalidWriteAttempt(address: number, cell: number): void {
     }
 
     private Processor_Polling(): void {

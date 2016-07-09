@@ -4,7 +4,6 @@ import {Memory} from "./Memory";
 import {MOS6502} from "./mos6502";
 import {ProcessorType} from "./ProcessorType";
 import {Signal} from "./Signal";
-import {AddressEventArgs} from "./AddressEventArgs";
 
 export class System6502 extends MOS6502 {
 
@@ -119,10 +118,9 @@ export class System6502 extends MOS6502 {
         // fetch byte has already incremented PC.
         let executingAddress: number = this.PC - 1;
 
-        let executing: AddressEventArgs = new AddressEventArgs(executingAddress, cell);
-        this.ExecutingInstruction.dispatch(executing);
+        this.ExecutingInstruction.dispatch(executingAddress, cell);
         super.Execute(cell);
-        this.ExecutedInstruction.dispatch(executing);
+        this.ExecutedInstruction.dispatch(executingAddress, cell);
 
         this._intervalCycles += (this.Cycles - oldCycles);
     }
