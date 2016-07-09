@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "sourceMap": true,
+    "target": "es5",
+    "noImplicitAny": true
+  },
+  "files": [
+    "typings/index.d.ts",
+    "app/AddressEventArgs.ts",
+    "app/AddressingMode.ts",
+    "app/AddressingModeDumper.ts",
+    "app/app.ts",
+    "app/ByteEventArgs.ts",
+    "app/Configuration.ts",
+    "app/ConfigurationReader.ts",
+    "app/Controller.ts",
+    "app/Disassembly.ts",
+    "app/DisassemblyEventArgs.ts",
+    "app/IDumper.ts",
+    "app/IImplementation.ts",
+    "app/IMemory.ts",
+    "app/Instruction.ts",
+    "app/Memory.ts",
+    "app/mos6502.ts",
+    "app/ProcessorType.ts",
+    "app/ProfileEventArgs.ts",
+    "app/ProfileLineEventArgs.ts",
+    "app/Profiler.ts",
+    "app/ProfileScopeEventArgs.ts",
+    "app/Signal.ts",
+    "app/StatusBits.ts",
+    "app/StatusFlags.ts",
+    "app/Symbols.ts",
+    "app/system6502.ts"
+  ]
+}

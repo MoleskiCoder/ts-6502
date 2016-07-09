@@ -1,0 +1,23 @@
+{
+	"CPU": {
+		"level": "Cpu65C02",
+		"speed": "200.0"
+	},
+	"IO": {
+		"inputAddress": "f004",
+    		"outputAddress": "f001"
+	},
+	"RAM": {
+		"path": "C:\\github\\cpp\\cpp_6502\\65C02_extended_opcodes_test.bin",
+		"loadAddress": "0"
+	},
+	"run": {
+		"stopWhenLoopDetected": true,
+		"startAddress": "400"
+	},
+	"debug": {
+		"disassemble": true,
+		"countInstructions": true,
+		"profileAddresses": true
+	}
+}

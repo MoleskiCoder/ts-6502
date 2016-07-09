@@ -1,0 +1,35 @@
+{
+	"Host": {
+		"speed": "2900.0"
+	},
+	"CPU": {
+		"level": "Cpu65SC02",
+		"speed": "200.0"
+	},
+	"IO": {
+		"inputAddress": "e000",
+    		"outputAddress": "e001"
+	},
+	"RAM": {
+		"path": "C:\\github\\6502\\6502_sudoku\\sudoku.65b",
+		"loadAddress": "f000"
+	},
+	"run": {
+		"resetStart": true,
+		"stopBreak": true
+	},
+	"debug": {
+		"disassemble": false,
+		"disassemblyLogPath": "c:\\github\\cs\\cs_6502\\sudoku.log",
+		"debugFile": "C:\\github\\6502\\6502_sudoku\\sudoku.dbg",
+		"countInstructions": true,
+		"profileAddresses": true
+	},
+	"release": {
+		"disassemble": false,
+		"disassemblyLogPath": "",
+		"debugFile": "",
+		"countInstructions": true,
+		"profileAddresses": true
+	}
+}

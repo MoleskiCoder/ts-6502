@@ -1,0 +1,12 @@
+{
+  "name": "ts-6502",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "node app/app.js",
+    "prepublish": "typings install && tsc",
+    "lint": "tslint -c tslint.json app/*.ts"
+  },
+  "dependencies": {
+    "sleep": "^3.0.1"
+  }
+}

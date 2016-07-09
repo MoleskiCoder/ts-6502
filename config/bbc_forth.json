@@ -1,0 +1,30 @@
+{
+	"CPU": {
+		"level": "cpu6502",
+		"speed": "2.0"
+	},
+	"IO": {
+		"inputAddress": "0800",
+		"outputAddress": "0801"
+	},
+	"BBC": {
+		"language": {
+			"path": "C:\\github\\cpp\\cpp_6502\\FORTH_1.03.rom"
+		},
+		"OS": {
+			"path": "C:\\github\\6502\\6502_mos\\mos.65b"
+		},
+		"VDUEmulation": true
+	},
+	"run": {
+		"resetStart": true,
+		"stopBreak": true
+	},
+	"debug": {
+		"disassemble": false,
+		"disassemblyLogPath": "c:\\github\\cs\\cs_6502\\bbc_forth.log",
+		"debugFile": "C:\\github\\6502\\6502_mos\\mos.dbg",
+		"countInstructions": true,
+		"profileAddresses": true
+	}
+}
