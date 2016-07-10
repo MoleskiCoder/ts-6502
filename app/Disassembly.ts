@@ -1,252 +1,200 @@
-﻿/*
-namespace Model
-{
-	using System.Collections.Generic;
-	using System.Globalization;
+﻿"use strict";
 
-	using Processor;
+import {MOS6502} from "./mos6502";
+import {Symbols} from "./Symbols";
+import {AddressingMode} from "./AddressingMode";
+import {Instruction} from "./Instruction";
+import {AddressingModeDumper} from "./AddressingModeDumper";
 
-	public class Disassembly
-	{
-		private MOS6502 processor;
-		private Symbols symbols;
+export class Disassembly {
 
-		private Dictionary<AddressingMode, AddressingModeDumper> dumpers;
+    private _processor: MOS6502;
+    private _symbols: Symbols;
+    private _dumpers: any = {};
 
-		////
+    constructor(processor: MOS6502 , symbols: Symbols ) {
+        this._processor = processor;
+        this._symbols = symbols;
 
-		public Disassembly(MOS6502 processor, Symbols symbols)
-		{
-			this.processor = processor;
-			this.symbols = symbols;
+        this._dumpers[AddressingMode.Illegal] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_Nothing);
+        this._dumpers[AddressingMode.Implied] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_Nothing);
+        this._dumpers[AddressingMode.Accumulator] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_A);
+        this._dumpers[AddressingMode.Immediate] = new AddressingModeDumper(this.Dump_Byte, this.Dump_imm);
+        this._dumpers[AddressingMode.Relative] = new AddressingModeDumper(this.Dump_Byte, this.Dump_rel);
+        this._dumpers[AddressingMode.XIndexed] = new AddressingModeDumper(this.Dump_Byte, this.Dump_xind);
+        this._dumpers[AddressingMode.IndexedY] = new AddressingModeDumper(this.Dump_Byte, this.Dump_indy);
+        this._dumpers[AddressingMode.ZeroPageIndirect] = new AddressingModeDumper(this.Dump_Byte, this.Dump_zpind);
+        this._dumpers[AddressingMode.ZeroPage] = new AddressingModeDumper(this.Dump_Byte, this.Dump_zp);
+        this._dumpers[AddressingMode.ZeroPageX] = new AddressingModeDumper(this.Dump_Byte, this.Dump_zpx);
+        this._dumpers[AddressingMode.ZeroPageY] = new AddressingModeDumper(this.Dump_Byte, this.Dump_zpy);
+        this._dumpers[AddressingMode.Absolute] = new AddressingModeDumper(this.Dump_DByte, this.Dump_abs);
+        this._dumpers[AddressingMode.AbsoluteX] = new AddressingModeDumper(this.Dump_DByte, this.Dump_absx);
+        this._dumpers[AddressingMode.AbsoluteY] = new AddressingModeDumper(this.Dump_DByte, this.Dump_absy);
+        this._dumpers[AddressingMode.AbsoluteXIndirect] = new AddressingModeDumper(this.Dump_DByte, this.Dump_absxind);
+        this._dumpers[AddressingMode.Indirect] = new AddressingModeDumper(this.Dump_DByte, this.Dump_ind);
+        this._dumpers[AddressingMode.ZeroPageRelative] = new AddressingModeDumper(this.Dump_DByte, this.Dump_zprel);
+    }
 
-			this.dumpers = new Dictionary<AddressingMode, AddressingModeDumper>()
-			{
-				{ AddressingMode.Illegal, new AddressingModeDumper { ByteDumper = this.Dump_Nothing, DisassemblyDumper = this.Dump_Nothing } },
-				{ AddressingMode.Implied, new AddressingModeDumper { ByteDumper = this.Dump_Nothing, DisassemblyDumper = this.Dump_Nothing } },
-				{ AddressingMode.Accumulator, new AddressingModeDumper { ByteDumper = this.Dump_Nothing, DisassemblyDumper = this.Dump_A } },
-				{ AddressingMode.Immediate, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_imm } },
-				{ AddressingMode.Relative, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_rel } },
-				{ AddressingMode.XIndexed, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_xind } },
-				{ AddressingMode.IndexedY, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_indy } },
-				{ AddressingMode.ZeroPageIndirect, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_zpind } },
-				{ AddressingMode.ZeroPage, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_zp } },
-				{ AddressingMode.ZeroPageX, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_zpx } },
-				{ AddressingMode.ZeroPageY, new AddressingModeDumper { ByteDumper = this.Dump_Byte, DisassemblyDumper = this.Dump_zpy } },
-				{ AddressingMode.Absolute, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_abs } },
-				{ AddressingMode.AbsoluteX, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_absx } },
-				{ AddressingMode.AbsoluteY, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_absy } },
-				{ AddressingMode.AbsoluteXIndirect, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_absxind } },
-				{ AddressingMode.Indirect, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_ind } },
-				{ AddressingMode.ZeroPageRelative, new AddressingModeDumper { ByteDumper = this.Dump_DByte, DisassemblyDumper = this.Dump_zprel } },
-			};
-		}
+    public Dump_ByteValue(value: number): string {
+        return value.toString(16);
+    }
 
-		public string Dump_ByteValue(byte value)
-		{
-			return string.Format(CultureInfo.InvariantCulture, "{0:x2}", value);
-		}
-	
-		////
+    public DumpBytes(mode: AddressingMode, current: number): string {
+        return this._dumpers[mode].ByteDumper.apply(this, [ current ]);
+    }
 
-		public string DumpBytes(AddressingMode mode, ushort current)
-		{
-			return this.dumpers[mode].ByteDumper(current);
-		}
+    public Disassemble(current: number): string  {
+        let content: number = this._processor.GetByte(current);
+        let instruction: Instruction = this._processor.Instructions[content];
 
-		public string Disassemble(ushort current)
-		{
-			var content = this.processor.GetByte(current);
-			var instruction = this.processor.Instructions[content];
+        let mode: AddressingMode = instruction.Mode;
+        let mnemonic: string = instruction.Display;
+        let operand: string = this.DumpOperand(mode, current + 1);
 
-			var mode = instruction.Mode;
-			var mnemomic = instruction.Display;
+        let label: string = this._symbols.Labels[current];
+        if (label === undefined) {
+            return `${mnemonic} ${operand}`;
+        }
+        return `${label}: ${mnemonic} ${operand}`;
+    }
 
-			var operand = this.DumpOperand(mode, (ushort)(current + 1));
+    public DumpOperand(mode: AddressingMode, current: number): string {
+        return this._dumpers[mode].DisassemblyDumper.apply(this, [ current ]);
+    }
 
-			string label;
-			if (this.symbols.Labels.TryGetValue(current, out label))
-			{
-				return string.Format(CultureInfo.InvariantCulture, "{0}: {1} {2}", label, mnemomic, operand);
-			}
-			else
-			{
-				return string.Format(CultureInfo.InvariantCulture, "{0} {1}", mnemomic, operand);
-			}
-		}
+    ////
 
-		public string DumpOperand(AddressingMode mode, ushort current)
-		{
-			return this.dumpers[mode].DisassemblyDumper(current);
-		}
+    private GetByte(address: number): number {
+        return this._processor.GetByte(address);
+    }
 
-		////
+    private GetWord(address: number): number {
+        return this._processor.GetWord(address);
+    }
 
-		private byte GetByte(ushort address)
-		{
-			return this.processor.GetByte(address);
-		}
+    ////
 
-		private ushort GetWord(ushort address)
-		{
-			return this.processor.GetWord(address);
-		}
+    private Dump_Nothing(unused: number ): string {
+        return "";
+    }
 
-		////
+    private Dump_Byte(address: number): string {
+        return this.Dump_ByteValue(this.GetByte(address));
+    }
 
-		private string Dump_Nothing(ushort unused)
-		{
-			return string.Empty;
-		}
+    private Dump_DByte(address: number): string {
+        return this.Dump_Byte(address) + this.Dump_Byte(address + 1);
+    }
 
-		private string Dump_Byte(ushort address)
-		{
-			return this.Dump_ByteValue(this.GetByte(address));
-		}
+    ////
 
-		private string Dump_DByte(ushort address)
-		{
-			return this.Dump_Byte(address) + this.Dump_Byte((ushort)(address + 1));
-		}
+    private ConvertWordAddress(address: number): string {
+        let label: string = this._symbols.Labels[address];
+        if (label === undefined) {
+            return address.toString(16);
+        }
+        return label;
+    }
 
-		////
+    private ConvertByteAddress(address: number): string {
+        let label: string = this._symbols.Labels[address];
+        if (label === undefined) {
+            return address.toString(16);
+        }
+        return label;
+    }
 
-		private string ConvertAddress(ushort address)
-		{
-			string label;
-			if (this.symbols.Labels.TryGetValue(address, out label))
-			{
-				return label;
-			}
+    private ConvertWordConstant(constant: number): string {
+        let label: string = this._symbols.Constants[constant];
+        if (label === undefined) {
+            return constant.toString(16);
+        }
+        return label;
+    }
 
-			return string.Format(CultureInfo.InvariantCulture, "${0:x4}", address);
-		}
+    private ConvertByteConstant(constant: number): string {
+        let label: string = this._symbols.Constants[constant];
+        if (label === undefined) {
+            return constant.toString(16);
+        }
+        return label;
+    }
 
-		private string ConvertAddress(byte address)
-		{
-			string label;
-			if (this.symbols.Labels.TryGetValue(address, out label))
-			{
-				return label;
-			}
+    ////
 
-			return string.Format(CultureInfo.InvariantCulture, "${0:x2}", address);
-		}
+    private Dump_A(unused: number): string {
+        return "A";
+    }
 
-		private string ConvertConstant(ushort constant)
-		{
-			string label;
-			if (this.symbols.Constants.TryGetValue(constant, out label))
-			{
-				return label;
-			}
+    private Dump_imm(current: number): string {
+        let immediate: number = this.GetByte(current);
+        return `#${this.ConvertByteConstant(immediate)}`;
+    }
 
-			return string.Format(CultureInfo.InvariantCulture, "${0:x4}", constant);
-		}
+    private Dump_abs(current: number): string {
+        let address: number = this.GetWord(current);
+        return this.ConvertWordAddress(address);
+    }
 
-		private string ConvertConstant(byte constant)
-		{
-			string label;
-			if (this.symbols.Constants.TryGetValue(constant, out label))
-			{
-				return label;
-			}
+    private Dump_zp(current: number): string {
+        let zp: number = this.GetByte(current);
+        return this.ConvertByteAddress(zp);
+    }
 
-			return string.Format(CultureInfo.InvariantCulture, "${0:x2}", constant);
-		}
+    private Dump_zpx(current: number): string {
+        let zp: number = this.GetByte(current);
+        return `${this.ConvertByteAddress(zp)},X`;
+    }
 
-		////
+    private Dump_zpy(current: number): string {
+        let zp: number = this.GetByte(current);
+        return `${this.ConvertByteAddress(zp)},Y`;
+    }
 
-		private string Dump_A(ushort unused)
-		{
-			return "A";
-		}
+    private Dump_absx(current: number): string {
+        let address: number = this.GetWord(current);
+        return `${this.ConvertWordAddress(address)},X`;
+    }
 
-		private string Dump_imm(ushort current)
-		{
-			var immediate = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "#{0}", this.ConvertConstant(immediate));
-		}
+    private Dump_absy(current: number): string {
+        let address: number = this.GetWord(current);
+        return `${this.ConvertWordAddress(address)},Y`;
+    }
 
-		private string Dump_abs(ushort current)
-		{
-			var address = this.GetWord(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0}", this.ConvertAddress(address));
-		}
+    private Dump_absxind(current: number): string {
+        let address: number = this.GetWord(current);
+        return `(${this.ConvertWordAddress(address)},X)`;
+    }
 
-		private string Dump_zp(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0}", this.ConvertAddress(zp));
-		}
+    private Dump_xind(current: number): string {
+        let zp: number = this.GetByte(current);
+        return `(${this.ConvertByteAddress(zp)},X)`;
+    }
 
-		private string Dump_zpx(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0},X", this.ConvertAddress(zp));
-		}
+    private Dump_indy(current: number): string {
+        let zp: number = this.GetByte(current);
+        return `(${this.ConvertByteAddress(zp)}),Y`;
+    }
 
-		private string Dump_zpy(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0},Y", this.ConvertAddress(zp));
-		}
+    private Dump_ind(current: number): string {
+        let address: number = this.GetWord(current);
+        return `(${this.ConvertWordAddress(address)})`;
+    }
 
-		private string Dump_absx(ushort current)
-		{
-			var address = this.GetWord(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0},X", this.ConvertAddress(address));
-		}
+    private Dump_zpind(current: number): string {
+        let zp: number = this.GetByte(current);
+        return `(${this.ConvertByteAddress(zp)})`;
+    }
 
-		private string Dump_absy(ushort current)
-		{
-			var address = this.GetWord(current);
-			return string.Format(CultureInfo.InvariantCulture, "{0},Y", this.ConvertAddress(address));
-		}
+    private Dump_rel(current: number): string {
+        let relative: number = 1 + current + this.GetByte(current);
+        return this.ConvertWordAddress(relative);
+    }
 
-		private string Dump_absxind(ushort current)
-		{
-			var address = this.GetWord(current);
-			return string.Format(CultureInfo.InvariantCulture, "({0},X)", this.ConvertAddress(address));
-		}
-
-		private string Dump_xind(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "({0},X)", this.ConvertAddress(zp));
-		}
-
-		private string Dump_indy(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "({0}),Y", this.ConvertAddress(zp));
-		}
-
-		private string Dump_ind(ushort current)
-		{
-			var address = this.GetWord(current);
-			return string.Format(CultureInfo.InvariantCulture, "({0})", this.ConvertAddress(address));
-		}
-
-		private string Dump_zpind(ushort current)
-		{
-			var zp = this.GetByte(current);
-			return string.Format(CultureInfo.InvariantCulture, "({0})", this.ConvertAddress(zp));
-		}
-
-		private string Dump_rel(ushort current)
-		{
-			var relative = (ushort)(1 + current + (sbyte)this.GetByte(current));
-			return string.Format(CultureInfo.InvariantCulture, "{0}", this.ConvertAddress(relative));
-		}
-
-		private string Dump_zprel(ushort current)
-		{
-			var zp = this.GetByte(current);
-			var displacement = (sbyte)this.GetByte((ushort)(current + 1));
-			var address = (ushort)(1 + current + displacement);
-			return string.Format(CultureInfo.InvariantCulture, "{0},{1}", this.ConvertAddress(zp), this.ConvertAddress(address));
-		}
-	}
+    private Dump_zprel(current: number): string {
+        let zp: number = this.GetByte(current);
+        let displacement: number = this.GetByte(current + 1);
+        let address: number = 1 + current + displacement;
+        return `${this.ConvertByteAddress(zp)},${this.ConvertWordAddress(address)}`;
+    }
 }
-*/

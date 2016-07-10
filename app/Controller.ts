@@ -3,6 +3,10 @@
 import {System6502} from "./system6502";
 import {Configuration} from "./Configuration";
 import {Symbols} from "./Symbols";
+import {Disassembly} from "./Disassembly";
+import {Signal} from "./Signal";
+import {Instruction} from "./Instruction";
+import {AddressingMode} from "./AddressingMode";
 
 export class Controller {
 
@@ -17,7 +21,11 @@ export class Controller {
     private _startTime: number;
     private _finishTime: number;
 
+    private _disassembler: Disassembly;
+
     private _symbols: Symbols;
+
+    private _disassembly: Signal = new Signal();
 
     constructor(configuration: Configuration) {
         this._configuration = configuration;
@@ -26,6 +34,8 @@ export class Controller {
     public get Processor(): System6502 { return this._processor; }
     public get StartTime(): number { return this._startTime; }
     public get FinishTime(): number { return this._finishTime; }
+
+    public get Disassembly(): Signal { return this._disassembly; }
 
     public Configure(): void {
 
@@ -77,6 +87,9 @@ export class Controller {
         }
 
         this._symbols = new Symbols(this._configuration.DebugFile);
+
+        this._disassembler = new Disassembly(this._processor, this._symbols);
+        this.Disassembly.add(this.Controller_Disassembly, this)
     }
 
     public Start(): void {
@@ -93,6 +106,24 @@ export class Controller {
 
     private Processor_ExecutingInstruction(address: number, cell: number): void {
 
+        if (this._configuration.Disassemble) {
+            let cycles: string = this._processor.Cycles.toString(16);
+            let hexAddress: string = address.toString(16);
+            let p: string = this._processor.P.toString();
+            let a: string = this._processor.A.toString(16);
+            let x: string = this._processor.X.toString(16);
+            let y: string = this._processor.Y.toString(16);
+            let s: string = this._processor.S.toString(16);
+            let state: string = `[${cycles}] PC=${hexAddress}:P=${p}, A=${a}, X=${x}, Y=${y}, S=${s}`;
+
+            let instruction: Instruction = this._processor.Instructions[cell];
+            let mode: AddressingMode = instruction.Mode;
+            let bytes: string = `${this._disassembler.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
+
+            let disassembly: string = `${state}\t${bytes}\t${this._disassembler.Disassemble(address)}`;
+            this.Disassembly.dispatch(disassembly);
+        }
+
         if (this._configuration.StopAddressEnabled && this._configuration.StopAddress === address) {
             this._processor.Proceed = false;
         }
@@ -108,6 +139,10 @@ export class Controller {
         if (this._configuration.StopBreak && this._configuration.BreakInstruction === cell) {
             this._processor.Proceed = false;
         }
+    }
+
+    private Controller_Disassembly(output: string): void {
+        console.log(output);
     }
 
     private Processor_WritingByte(address: number, cell: number): void {
