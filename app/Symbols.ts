@@ -1,137 +1,105 @@
-﻿/*namespace Model
-{
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.IO;
+﻿"use strict";
 
-	public class Symbols
-	{
-		private Dictionary<ushort, string> labels;
-		private Dictionary<ushort, string> constants;
-		private Dictionary<string, ushort> scopes;
-		private Dictionary<string, ulong> addresses;
+import * as FS from "fs";
 
-		private Dictionary<string, Dictionary<string, Dictionary<string, string>>> parsed;
+export class Symbols {
 
-		public Symbols(string path)
-		{
-			this.parsed = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
-			this.labels = new Dictionary<ushort, string>();
-			this.constants = new Dictionary<ushort, string>();
-			this.scopes = new Dictionary<string, ushort>();
-			this.addresses = new Dictionary<string, ulong>();
+    private _labels: any;
+    private _constants: any;
+    private _scopes: any;
+    private _addresses: any;
 
-			if (!string.IsNullOrWhiteSpace(path))
-			{
-				this.Parse(path);
-				this.AssignSymbols();
-				this.AssignScopes();
-			}
-		}
+    private _parsed: any;
 
-		public Dictionary<ushort, string> Labels
-		{
-			get
-			{
-				return this.labels;
-			}
-		}
+    private static trimQuotes(input: string): string {
+        return input.replace(/^"(.+(?="$))"$/, "$1");
+    }
 
-		public Dictionary<ushort, string> Constants
-		{
-			get
-			{
-				return this.constants;
-			}
-		}
+    constructor(path: string) {
 
-		public Dictionary<string, ushort> Scopes
-		{
-			get
-			{
-				return this.scopes;
-			}
-		}
+        this._parsed = {};
+        this._labels = {};
+        this._constants = {};
+        this._scopes = {};
+        this._addresses = {};
 
-		public Dictionary<string, ulong> Addresses
-		{
-			get
-			{
-				return this.addresses;
-			}
-		}
+        if (path.length > 0) {
+            this.Parse(path);
+            this.AssignSymbols();
+            this.AssignScopes();
+        }
+    }
 
-		private void AssignScopes()
-		{
-			var parsedScopes = this.parsed["scope"];
-			foreach (var parsedScope in parsedScopes.Values)
-			{
-				var name = parsedScope["name"].Trim(new char[] { '"' });
-				var size = parsedScope["size"];
-				this.scopes[name] = ushort.Parse(size, CultureInfo.InvariantCulture);
-			}
-		}
+    public get Labels(): any { return this._labels; }
+    public get Constants(): any { return this._constants; }
+    public get Scopes(): any { return this._scopes; }
+    public get Addresses(): any { return this._addresses; }
 
-		private void AssignSymbols()
-		{
-			var symbols = this.parsed["sym"];
-			foreach (var symbol in symbols.Values)
-			{
-				var name = symbol["name"].Trim(new char[] { '"' });
-				var value = symbol["val"];
-				var number = ushort.Parse(value.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-				switch (symbol["type"])
-				{
-					case "lab":
-						this.labels[number] = name;
-						this.addresses[name] = number;
-						break;
+    private AssignScopes(): void {
+        let parsedScopes: any = this._parsed.scope;
+        for (let key in parsedScopes) {
+            if (parsedScopes.hasOwnProperty(key)) {
+                let parsedScope: any = parsedScopes[key];
+                let name: string = Symbols.trimQuotes(parsedScope.name);
+                let size: string = parsedScope.size;
+                this._scopes[name] = parseInt(size, 10);
+            }
+        }
+    }
 
-					case "equ":
-						this.constants[number] = name;
-						break;
-				}
-			}
-		}
+    private AssignSymbols(): void {
+        let symbols: any = this._parsed.sym;
+        for (let key in symbols) {
+            if (symbols.hasOwnProperty(key)) {
+                let symbol: any = symbols[key];
+                let name: string = Symbols.trimQuotes(symbol.name);
+                let value: string = symbol.val;
+                let parsedNumber: number = parseInt(value, 16);
+                switch (symbol.type) {
+                    case "lab":
+                        this._labels[parsedNumber] = name;
+                        this._addresses[name] = parsedNumber;
+                        break;
 
-		private void Parse(string path)
-		{
-			using (var reader = new StreamReader(path))
-			{
-				while (!reader.EndOfStream)
-				{
-					var line = reader.ReadLine();
-					var lineElements = line.Split();
-					if (lineElements.Length == 2)
-					{
-						var type = lineElements[0];
-						var dataElements = lineElements[1].Split(new char[] { ',' });
-						var data = new Dictionary<string, string>();
-						foreach (var dataElement in dataElements)
-						{
-							var definition = dataElement.Split(new char[] { '=' });
-							if (definition.Length == 2)
-							{
-								data[definition[0]] = definition[1];
-							}
-						}
+                    case "equ":
+                        this._constants[parsedNumber] = name;
+                        break;
 
-						if (data.ContainsKey("id"))
-						{
-							if (!this.parsed.ContainsKey(type))
-							{
-								this.parsed[type] = new Dictionary<string, Dictionary<string, string>>();
-							}
+                    default:
+                        // ignore unknown symbol types
+                }
+            }
+        }
+    }
 
-							var id = data["id"];
-							data.Remove("id");
-							this.parsed[type][id] = data;
-						}
-					}
-				}
-			}
-		}
-	}
+    private Parse(path: string ): void {
+
+        let contents: string = FS.readFileSync(path, "utf8");
+        let lines: string[] = contents.split(/\n|\r\n/);
+
+        for (let line of lines) {
+
+            let lineElements: string[] = line.split(/\s/);
+            if (lineElements.length === 2) {
+                let type: string = lineElements[0];
+                let dataElements: string[] = lineElements[1].split(",");
+                let data: any = {};
+                for (let dataElement of dataElements) {
+                    let definition: string[] = dataElement.split("=");
+                    if (definition.length === 2) {
+                        data[definition[0]] = definition[1];
+                    }
+                }
+
+                if (data.hasOwnProperty("id")) {
+                    if (!this._parsed.hasOwnProperty(type)) {
+                        this._parsed[type] = {};
+                    }
+                    let id: string = data.id;
+                    delete data.id;
+                    this._parsed[type][id] = data;
+                }
+            }
+        }
+    }
 }
-*/

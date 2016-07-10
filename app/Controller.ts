@@ -2,6 +2,7 @@
 
 import {System6502} from "./system6502";
 import {Configuration} from "./Configuration";
+import {Symbols} from "./Symbols";
 
 export class Controller {
 
@@ -15,6 +16,8 @@ export class Controller {
 
     private _startTime: number;
     private _finishTime: number;
+
+    private _symbols: Symbols;
 
     constructor(configuration: Configuration) {
         this._configuration = configuration;
@@ -72,6 +75,8 @@ export class Controller {
         } else {
             this._processor.Start(this._configuration.StartAddress);
         }
+
+        this._symbols = new Symbols(this._configuration.DebugFile);
     }
 
     public Start(): void {
