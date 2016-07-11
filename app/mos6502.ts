@@ -1212,8 +1212,9 @@ export abstract class MOS6502 {
 
     private DEC(offset: number): void {
         let content: number = this.GetByte(offset);
-        this.SetByte(offset, --content);
-        this.UpdateZeroNegativeFlags(content);
+        let decremented: number = MOS6502.toUnsignedByte(--content);
+        this.SetByte(offset, decremented);
+        this.UpdateZeroNegativeFlags(decremented);
     }
 
     private ROR_data(data: number): number {
@@ -1278,8 +1279,9 @@ export abstract class MOS6502 {
 
     private INC(offset: number): void {
         let content: number = this.GetByte(offset);
-        this.SetByte(offset, ++content);
-        this.UpdateZeroNegativeFlags(content);
+        let incremented: number = MOS6502.toUnsignedByte(++content);
+        this.SetByte(offset, incremented);
+        this.UpdateZeroNegativeFlags(incremented);
     }
 
     private ROL_contents(offset: number): void {
@@ -1291,7 +1293,7 @@ export abstract class MOS6502 {
 
         this.P.Carry = (data & 0x80) !== 0;
 
-        let result: number = data << 1;
+        let result: number = MOS6502.toUnsignedByte(data << 1);
 
         if (carry) {
             result |= 1;
@@ -1307,7 +1309,7 @@ export abstract class MOS6502 {
     }
 
     private ASL_data(data: number): number {
-        let result: number = data << 1;
+        let result: number = MOS6502.toUnsignedByte(data << 1);
 
         this.UpdateZeroNegativeFlags(result);
         this.P.Carry = (data & 0x80) !== 0;
@@ -1336,12 +1338,13 @@ export abstract class MOS6502 {
     private SBC_b(data: number): void {
         let carry: number = this.P.Carry ? 0 : 1;
         let difference: number = this.A - data - carry;
+        let truncated: number = MOS6502.toUnsignedByte(difference);
 
-        this.UpdateZeroNegativeFlags(difference);
+        this.UpdateZeroNegativeFlags(truncated);
         this.P.Overflow = ((this.A ^ data) & (this.A ^ difference) & 0x80) !== 0;
         this.P.Carry = MOS6502.HighByte(difference) === 0;
 
-        this.A = difference;
+        this.A = truncated;
     }
 
     private SBC_d(data: number): void {
@@ -1424,12 +1427,13 @@ export abstract class MOS6502 {
     private ADC_b(data: number): void {
         let carry: number = this.P.Carry ? 1 : 0;
         let sum: number = this.A + data + carry;
+        let truncated: number = MOS6502.toUnsignedByte(sum);
 
-        this.UpdateZeroNegativeFlags(sum);
+        this.UpdateZeroNegativeFlags(truncated);
         this.P.Overflow = (~(this.A ^ data) & (this.A ^ sum) & 0x80) !== 0;
         this.P.Carry = MOS6502.HighByte(sum) !== 0;
 
-        this.A = sum;
+        this.A = truncated;
     }
 
     private ADC_d(data: number): void {
