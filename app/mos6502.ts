@@ -28,6 +28,19 @@ export abstract class MOS6502 {
 
     private _proceed: boolean = true;
 
+    private static toSignedByte(unsigned: number): number {
+        console.assert((unsigned & ~0xff) === 0);
+        let unsignedPart: number = unsigned & 0x7f;
+        let signedPart: number = unsigned & 0x80;
+        let returnValue: number = unsignedPart - signedPart;
+        console.assert((returnValue >= -128) && (returnValue <= 127));
+        return returnValue;
+    }
+
+    private static toUnsignedByte(signed: number): number {
+        return MOS6502.LowByte(signed);
+    }
+
     private static INS(method: IImplementation, cycles: number, addressing: AddressingMode, display: string): Instruction {
         return new Instruction(method, cycles, addressing, display);
     }
@@ -1008,7 +1021,7 @@ export abstract class MOS6502 {
         if (this.UpdateZeroFlag(datum)) {
             this.P.Negative = false;
         } else {
-            this.UpdateNegativeFlag(datum);
+            this.UpdateNegativeFlag(MOS6502.toSignedByte(datum));
         }
     }
 
@@ -1118,7 +1131,7 @@ export abstract class MOS6502 {
     }
 
     private ReadByte_ImmediateDisplacement(): number {
-        return this.FetchByte();
+        return MOS6502.toSignedByte(this.FetchByte());
     }
 
     private ReadByte_ZeroPage(): number {
@@ -1344,14 +1357,14 @@ export abstract class MOS6502 {
 
         let low: number = MOS6502.LowNybble(this.A) - MOS6502.LowNybble(data) - carry;
 
-        let lowNegative: boolean = low < 0;
+        let lowNegative: boolean = MOS6502.toSignedByte(low) < 0;
         if (lowNegative) {
             low -= 6;
         }
 
         let high: number = MOS6502.HighNybble(this.A) - MOS6502.HighNybble(data) - (lowNegative ? 1 : 0);
 
-        if (high < 0) {
+        if (MOS6502.toSignedByte(high) < 0) {
             high -= 6;
         }
 
@@ -1381,7 +1394,7 @@ export abstract class MOS6502 {
     private CMP(first: number, second: number): void {
         let result: number = first - second;
 
-        this.UpdateZeroNegativeFlags(result);
+        this.UpdateZeroNegativeFlags(MOS6502.toUnsignedByte(result));
         this.P.Carry = MOS6502.HighByte(result) === 0;
     }
 
@@ -1464,6 +1477,7 @@ export abstract class MOS6502 {
     ////
 
     private BranchOffset(displacement: number): void {
+        console.assert((displacement >= -128) && (displacement <= 127));
         ++this.Cycles;
         let oldPage: number = MOS6502.HighByte(this.PC);
         this.PC += displacement;
