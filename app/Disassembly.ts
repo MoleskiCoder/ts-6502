@@ -26,7 +26,8 @@ export class Disassembly {
         }
         let converted: string = value.toString(base);
         let length: number = converted.length;
-        return length >= width ? converted : new Array(width - length + 1).join(zero) + value;
+        let padded: string = length >= width ? converted : new Array(width - length + 1).join(zero) + converted;
+        return padded;
     }
 
     constructor(processor: MOS6502 , symbols: Symbols ) {
