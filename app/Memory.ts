@@ -1,7 +1,6 @@
 ﻿"use strict";
 
 import {Signal} from "./Signal";
-import {AddressEventArgs} from "./AddressEventArgs";
 import {IMemory} from "./IMemory";
 
 import * as FS from "fs";
