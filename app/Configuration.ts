@@ -130,10 +130,9 @@ export class Configuration extends ConfigurationReader {
             if (this.Root.run.stopAddress !== undefined) {
                 this._stopAddress = parseInt(this.Root.run.stopAddress, 16);
             }
-            if (this.Root.run.stopAddressEnabled !== undefined) {
-                this._stopAddressEnabled = this.Root.run.stopAddressEnabled;
-            }
         }
+
+        this._stopAddressEnabled = this._stopAddress != 0;
 
         if (debug) {
             if (this.Root.debug !== undefined) {
