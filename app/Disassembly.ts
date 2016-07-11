@@ -12,6 +12,23 @@ export class Disassembly {
     private _symbols: Symbols;
     private _dumpers: any = {};
 
+    public static Dump_ByteValue(value: number): string {
+        return Disassembly.pad(value, 16, 2);
+    }
+
+    public static Dump_WordValue(value: number): string {
+        return Disassembly.pad(value, 16, 4);
+    }
+
+    public static pad(value: number, base: number, width: number, zero?: string): string {
+        if (zero === undefined) {
+            zero = "0";
+        }
+        let converted: string = value.toString(base);
+        let length: number = converted.length;
+        return length >= width ? converted : new Array(width - length + 1).join(zero) + value;
+    }
+
     constructor(processor: MOS6502 , symbols: Symbols ) {
         this._processor = processor;
         this._symbols = symbols;
@@ -35,10 +52,6 @@ export class Disassembly {
         this._dumpers[AddressingMode.ZeroPageRelative] = new AddressingModeDumper(this.Dump_DByte, this.Dump_zprel);
     }
 
-    public Dump_ByteValue(value: number): string {
-        return value.toString(16);
-    }
-
     public DumpBytes(mode: AddressingMode, current: number): string {
         return this._dumpers[mode].ByteDumper.apply(this, [ current ]);
     }
@@ -49,6 +62,7 @@ export class Disassembly {
 
         let mode: AddressingMode = instruction.Mode;
         let mnemonic: string = instruction.Display;
+
         let operand: string = this.DumpOperand(mode, current + 1);
 
         let label: string = this._symbols.Labels[current];
@@ -79,7 +93,7 @@ export class Disassembly {
     }
 
     private Dump_Byte(address: number): string {
-        return this.Dump_ByteValue(this.GetByte(address));
+        return Disassembly.Dump_ByteValue(this.GetByte(address));
     }
 
     private Dump_DByte(address: number): string {
@@ -91,7 +105,7 @@ export class Disassembly {
     private ConvertWordAddress(address: number): string {
         let label: string = this._symbols.Labels[address];
         if (label === undefined) {
-            return address.toString(16);
+            return `$${Disassembly.pad(address, 16, 4)}`;
         }
         return label;
     }
@@ -99,7 +113,7 @@ export class Disassembly {
     private ConvertByteAddress(address: number): string {
         let label: string = this._symbols.Labels[address];
         if (label === undefined) {
-            return address.toString(16);
+            return `$${Disassembly.pad(address, 16, 2)}`;
         }
         return label;
     }
@@ -107,7 +121,7 @@ export class Disassembly {
     private ConvertWordConstant(constant: number): string {
         let label: string = this._symbols.Constants[constant];
         if (label === undefined) {
-            return constant.toString(16);
+            return `$${Disassembly.pad(constant, 16, 4)}`;
         }
         return label;
     }
@@ -115,7 +129,7 @@ export class Disassembly {
     private ConvertByteConstant(constant: number): string {
         let label: string = this._symbols.Constants[constant];
         if (label === undefined) {
-            return constant.toString(16);
+            return `$${Disassembly.pad(constant, 16, 2)}`;
         }
         return label;
     }

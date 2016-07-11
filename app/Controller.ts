@@ -107,18 +107,18 @@ export class Controller {
     private Processor_ExecutingInstruction(address: number, cell: number): void {
 
         if (this._configuration.Disassemble) {
-            let cycles: string = this._processor.Cycles.toString(16);
-            let hexAddress: string = address.toString(16);
+            let cycles: string = Disassembly.pad(this._processor.Cycles, 10, 9);
+            let hexAddress: string = Disassembly.Dump_WordValue(address);
             let p: string = this._processor.P.toString();
-            let a: string = this._processor.A.toString(16);
-            let x: string = this._processor.X.toString(16);
-            let y: string = this._processor.Y.toString(16);
-            let s: string = this._processor.S.toString(16);
+            let a: string = Disassembly.Dump_ByteValue(this._processor.A);
+            let x: string = Disassembly.Dump_ByteValue(this._processor.X);
+            let y: string = Disassembly.Dump_ByteValue(this._processor.Y);
+            let s: string = Disassembly.Dump_ByteValue(this._processor.S);
             let state: string = `[${cycles}] PC=${hexAddress}:P=${p}, A=${a}, X=${x}, Y=${y}, S=${s}`;
 
             let instruction: Instruction = this._processor.Instructions[cell];
             let mode: AddressingMode = instruction.Mode;
-            let bytes: string = `${this._disassembler.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
+            let bytes: string = `${Disassembly.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
 
             let disassembly: string = `${state}\t${bytes}\t${this._disassembler.Disassemble(address)}`;
             this.Disassembly.dispatch(disassembly);
