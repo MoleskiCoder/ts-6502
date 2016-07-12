@@ -167,6 +167,63 @@ export class Controller {
     }
 
     private HandleByteWritten(cell: number): void {
+        let character: string = String.fromCharCode(cell);
+        if (this._configuration.BbcVduEmulation) {
+            switch (cell) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                    break;
+                case 7:
+                    break;
+                case 8:
+                    break;
+                case 9:
+                    break;
+                case 10:
+                    process.stdout.write(character);
+                    break;
+                case 11:
+                    break;
+                case 12:
+                    break;
+                case 13:
+                    process.stdout.write(character);
+                    break;
+                case 14:
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                case 20:
+                case 21:
+                case 22:
+                case 23:
+                case 24:
+                case 25:
+                case 26:
+                case 27:
+                case 28:
+                case 29:
+                    break;
+                case 30:
+                    break;
+                case 31:
+                    break;
+                case 127:
+                    break;
+                default:
+                    process.stdout.write(character);
+                    break;
+            }
+        } else {
+            process.stdout.write(character);
+        }
     }
 
     private HandleByteRead(cell: number): void {
