@@ -29,11 +29,11 @@ export abstract class MOS6502 {
     private _proceed: boolean = true;
 
     private static toSignedByte(unsigned: number): number {
-        console.assert((unsigned & ~0xff) === 0);
+        // console.assert((unsigned & ~0xff) === 0);
         let unsignedPart: number = unsigned & 0x7f;
         let signedPart: number = unsigned & 0x80;
         let returnValue: number = unsignedPart - signedPart;
-        console.assert((returnValue >= -128) && (returnValue <= 127));
+    	// console.assert((returnValue >= -128) && (returnValue <= 127));
         return returnValue;
     }
 
@@ -1483,7 +1483,7 @@ export abstract class MOS6502 {
     ////
 
     private BranchOffset(displacement: number): void {
-        console.assert((displacement >= -128) && (displacement <= 127));
+        // console.assert((displacement >= -128) && (displacement <= 127));
         ++this.Cycles;
         let oldPage: number = MOS6502.HighByte(this.PC);
         this.PC += displacement;
