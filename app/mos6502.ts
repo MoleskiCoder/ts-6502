@@ -1028,11 +1028,13 @@ export abstract class MOS6502 {
     ////
 
     private PushByte(value: number): void {
-        this.SetByte(MOS6502.PageOne + this.S--, value);
+        this.SetByte(MOS6502.PageOne + this.S, value);
+        this.S = MOS6502.toUnsignedByte(--this.S);
     }
 
     private PopByte(): number {
-        return this.GetByte(MOS6502.PageOne + ++this.S);
+        this.S = MOS6502.toUnsignedByte(++this.S);
+        return this.GetByte(MOS6502.PageOne + this.S);
     }
 
     private PushWord(value: number): void {
@@ -1352,26 +1354,26 @@ export abstract class MOS6502 {
         let difference: number = this.A - data - carry;
 
         if (this.Level < ProcessorType.Cpu65SC02) {
-            this.UpdateZeroNegativeFlags(difference);
+            this.UpdateZeroNegativeFlags(MOS6502.toUnsignedByte(difference));
         }
 
         this.P.Overflow = ((this.A ^ data) & (this.A ^ difference) & 0x80) !== 0;
         this.P.Carry = MOS6502.HighByte(difference) === 0;
 
-        let low: number = MOS6502.LowNybble(this.A) - MOS6502.LowNybble(data) - carry;
+        let low: number = MOS6502.toUnsignedByte(MOS6502.LowNybble(this.A) - MOS6502.LowNybble(data) - carry);
 
         let lowNegative: boolean = MOS6502.toSignedByte(low) < 0;
         if (lowNegative) {
             low -= 6;
         }
 
-        let high: number = MOS6502.HighNybble(this.A) - MOS6502.HighNybble(data) - (lowNegative ? 1 : 0);
+        let high: number = MOS6502.toUnsignedByte(MOS6502.HighNybble(this.A) - MOS6502.HighNybble(data) - (lowNegative ? 1 : 0));
 
         if (MOS6502.toSignedByte(high) < 0) {
             high -= 6;
         }
 
-        this.A = MOS6502.PromoteNybble(high) | MOS6502.LowNybble(low);
+        this.A = MOS6502.toUnsignedByte(MOS6502.PromoteNybble(high) | MOS6502.LowNybble(low));
         if (this.Level >= ProcessorType.Cpu65SC02) {
             this.UpdateZeroNegativeFlags(this.A);
         }
@@ -1441,15 +1443,15 @@ export abstract class MOS6502 {
         let sum: number = this.A + data + carry;
 
         if (this.Level < ProcessorType.Cpu65SC02) {
-            this.UpdateZeroNegativeFlags(sum);
+            this.UpdateZeroNegativeFlags(MOS6502.toUnsignedByte(sum));
         }
 
-        let low: number = MOS6502.LowNybble(this.A) + MOS6502.LowNybble(data) + carry;
+        let low: number = MOS6502.toUnsignedByte(MOS6502.LowNybble(this.A) + MOS6502.LowNybble(data) + carry);
         if (low > 9) {
             low += 6;
         }
 
-        let high: number = MOS6502.HighNybble(this.A) + MOS6502.HighNybble(data) + (low > 0xf ? 1 : 0);
+        let high: number = MOS6502.toUnsignedByte(MOS6502.HighNybble(this.A) + MOS6502.HighNybble(data) + (low > 0xf ? 1 : 0));
         this.P.Overflow = (~(this.A ^ data) & (this.A ^ MOS6502.PromoteNybble(high)) & 0x80) !== 0;
 
         if (high > 9) {
@@ -1458,7 +1460,7 @@ export abstract class MOS6502 {
 
         this.P.Carry = high > 0xf;
 
-        this.A = MOS6502.PromoteNybble(high) | MOS6502.LowNybble(low);
+        this.A = MOS6502.toUnsignedByte(MOS6502.PromoteNybble(high) | MOS6502.LowNybble(low));
         if (this.Level >= ProcessorType.Cpu65SC02) {
             this.UpdateZeroNegativeFlags(this.A);
         }
@@ -1922,11 +1924,13 @@ export abstract class MOS6502 {
     // x/y
 
     private DEX_imp(): void {
-        this.UpdateZeroNegativeFlags(--this.X);
+        this.X = MOS6502.toUnsignedByte(--this.X);
+        this.UpdateZeroNegativeFlags(this.X);
     }
 
     private DEY_imp(): void {
-        this.UpdateZeroNegativeFlags(--this.Y);
+        this.Y = MOS6502.toUnsignedByte(--this.Y);
+        this.UpdateZeroNegativeFlags(this.Y);
     }
 
     // inc
@@ -1954,11 +1958,13 @@ export abstract class MOS6502 {
     // x/y
 
     private INX_imp(): void {
-        this.UpdateZeroNegativeFlags(++this.X);
+        this.X = MOS6502.toUnsignedByte(++this.X);
+        this.UpdateZeroNegativeFlags(this.X);
     }
 
     private INY_imp(): void {
-        this.UpdateZeroNegativeFlags(++this.Y);
+        this.Y = MOS6502.toUnsignedByte(++this.Y);
+        this.UpdateZeroNegativeFlags(this.Y);
     }
 
     // writers
