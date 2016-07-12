@@ -40,13 +40,10 @@ export class Signal {
      * @param {Function} listener Signal handler function.
      * @param {Object} [listenerContext] Context on which listener will be executed (object that should represent
      * the `this` variable inside listener function).
-     * @param {Number} [priority] The priority level of the event listener. Listeners with higher priority will be
-     * executed before listeners with lower priority. Listeners with same priority level will be executed at the same
-     * order as they were added. (default = 0)
      * @return {SignalBinding} An Object representing the binding between the Signal and listener.
      */
-    public add(listener: Function, listenerContext?: any, priority?: number): SignalBinding {
-        return this._registerListener(listener, false, listenerContext, priority);
+    public add(listener: Function, listenerContext?: any): SignalBinding {
+        return this._registerListener(listener, listenerContext);
     }
 
     /**
@@ -95,25 +92,9 @@ export class Signal {
         delete this._bindings;
     }
 
-    /**
-     * @return {string} String representation of the object.
-     */
-    public toString(): string {
-        return "[numListeners:" + this.getNumListeners() + "]";
-    }
-
-    private _registerListener(listener: Function, isOnce: boolean, listenerContext: Object, priority: number): SignalBinding {
-
-        let binding: SignalBinding = new SignalBinding(this, listener, isOnce, listenerContext, priority);
-        this._addBinding(binding);
-
+    private _registerListener(listener: Function, listenerContext: Object): SignalBinding {
+        let binding: SignalBinding = new SignalBinding(this, listener, listenerContext);
+        this._bindings.push(binding);
         return binding;
-    }
-
-    private _addBinding(binding: SignalBinding): void {
-        // simplified insertion sort
-        let n: number = this._bindings.length;
-        do { --n; } while (this._bindings[n] && binding.priority <= this._bindings[n].priority);
-        this._bindings.splice(n + 1, 0, binding);
     }
 }

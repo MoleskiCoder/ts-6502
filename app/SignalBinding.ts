@@ -18,18 +18,6 @@ import {Signal} from "./Signal";
 export class SignalBinding {
 
     /**
-     * Listener priority
-     * @type Number
-     */
-    public priority: number;
-
-    /**
-     * If binding is active and should be executed.
-     * @type boolean
-     */
-    public active: boolean = true;
-
-    /**
      * Default parameters passed to listener during `Signal.dispatch` and `SignalBinding.execute`. (curried parameters)
      * @type Array|undefined
      */
@@ -51,13 +39,6 @@ export class SignalBinding {
     private _listener: Function;
 
     /**
-     * If binding should be executed just once.
-     * @type boolean
-     * @private
-     */
-    private _isOnce: boolean;
-
-    /**
      * Reference to Signal object that listener is currently bound to.
      */
     private _signal: Signal;
@@ -72,18 +53,14 @@ export class SignalBinding {
      * @name SignalBinding
      * @param {Signal} signal Reference to Signal object that listener is currently bound to.
      * @param {Function} listener Handler function bound to the signal.
-     * @param {boolean} isOnce If binding should be executed just once.
      * @param {Object} [listenerContext] Context on which listener will be executed (object that should represent
      * the `this`
      * variable inside listener function).
-     * @param {Number} [priority] The priority level of the event listener. (default = 0).
      */
-    constructor(signal: Signal, listener: Function, isOnce: boolean, listenerContext: Object, priority?: number) {
+    constructor(signal: Signal, listener: Function, listenerContext: Object) {
         this._listener = listener;
-        this._isOnce = isOnce;
         this.context = listenerContext;
         this._signal = signal;
-        this.priority = priority || 0;
     }
 
     /**
@@ -94,43 +71,8 @@ export class SignalBinding {
      * @return {*} Value returned by the listener.
      */
     public execute(paramsArr?: any[]): any {
-
-        let handlerReturn: any;
-
-        if (this.active && !!this._listener) {
-            let params: Array<any> = this.params ? this.params.concat(paramsArr) : paramsArr;
-
-            handlerReturn = this._listener.apply(this.context, params);
-
-            if (this._isOnce) {
-                this.detach();
-            }
-        }
-
-        return handlerReturn;
-    }
-
-    /**
-     * Detach binding from signal.
-     * - alias to: mySignal.remove(myBinding.getListener());
-     * @return {Function|undefined} Handler function bound to the signal or `null` if binding was previously detached.
-     */
-    public detach(): Function {
-        return this.isBound() ? this._signal.remove(this._listener, this.context) : undefined;
-    }
-
-    /**
-     * @return {Boolean} `true` if binding is still bound to the signal and have a listener.
-     */
-    public isBound(): boolean {
-        return (!!this._signal && !!this._listener);
-    }
-
-    /**
-     * @return {boolean} If SignalBinding will only be executed once.
-     */
-    public isOnce(): boolean {
-        return this._isOnce;
+        let params: Array<any> = this.params ? this.params.concat(paramsArr) : paramsArr;
+        return this._listener.apply(this.context, params);
     }
 
     /**
@@ -155,12 +97,5 @@ export class SignalBinding {
         delete this._signal;
         delete this._listener;
         delete this.context;
-    }
-
-    /**
-     * @return {string} String representation of the object.
-     */
-    public toString(): string {
-        return "[SignalBinding isOnce:" + this._isOnce + ", isBound:" + this.isBound() + ", active:" + this.active + "]";
     }
 }
