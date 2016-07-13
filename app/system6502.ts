@@ -9,15 +9,7 @@ export class System6502 extends MOS6502 {
 
     private _memory: Memory;
 
-    private _speed: number;  // speed in MHz, e.g. 2.0 == 2Mhz, 1.79 = 1.79Mhz
-
     private _startTime: number;
-
-    private _cyclesPerSecond: number;
-    private _cyclesPerMillisecond: number;
-    private _cyclesPerInterval: number;
-
-    private _intervalCycles: number;
 
     private _running: boolean = false;
     private _heldCycles: number = 0;
@@ -46,11 +38,8 @@ export class System6502 extends MOS6502 {
 
         this._memory = new Memory(System6502.MemorySize);
 
-        this._speed = speed;
-
-        this._cyclesPerSecond = this._speed * System6502.Mega;     // speed is in MHz
-        this._cyclesPerMillisecond = this._cyclesPerSecond * System6502.Milli;
-        this._cyclesPerInterval = this._cyclesPerMillisecond * pollInterval;
+        this.Starting.add(this.System6502_Starting, this);
+        this.Finished.add(this.System6502_Finished, this);
     }
 
     public get Starting(): Signal {
@@ -91,16 +80,6 @@ export class System6502 extends MOS6502 {
         this._memory.ClearMemory();
     }
 
-    public Run(): void {
-
-        this.Starting.add(this.System6502_Starting, this);
-        this.Finished.add(this.System6502_Finished, this);
-
-        this.Starting.dispatch();
-        super.Run();
-        this.Finished.dispatch();
-    }
-
     public GetByte(offset: number): number {
         return this._memory.GetByte(offset);
     }
@@ -111,49 +90,20 @@ export class System6502 extends MOS6502 {
 
     protected Execute(cell: number): void {
 
-        let oldCycles: number = this.Cycles;
-
-        this.CheckPoll();
-
         // fetch byte has already incremented PC.
         let executingAddress: number = this.PC - 1;
 
         this.ExecutingInstruction.dispatch(executingAddress, cell);
         super.Execute(cell);
         this.ExecutedInstruction.dispatch(executingAddress, cell);
-
-        this._intervalCycles += (this.Cycles - oldCycles);
-    }
-
-    private CheckPoll(): void {
-        if (this._intervalCycles >= this._cyclesPerInterval) {
-            this._intervalCycles -= this._cyclesPerInterval;
-            this.Throttle();
-            this.Polling.dispatch();
-        }
     }
 
     private System6502_Starting(): void {
-        this._startTime = (new Date()).getTime();
+        this._startTime = Date.now();
         this._running = true;
     }
 
     private System6502_Finished(): void {
         this._running = false;
-    }
-
-    private Throttle(): void {
-
-        let elapsedTime: number = Date.now() - this._startTime;
-
-        let cyclesAllowed: number = elapsedTime * this._cyclesPerMillisecond;
-        let cyclesMismatch: number = this.Cycles - cyclesAllowed;
-        if (cyclesMismatch > 0.0) {
-            let delay: number = cyclesMismatch / this._cyclesPerMillisecond;
-            if (delay > 0) {
-                this._heldCycles += cyclesMismatch;
-                // system.Threading.Thread.Sleep(delay);
-            }
-        }
     }
 }

@@ -123,12 +123,6 @@ export abstract class MOS6502 {
         this.PC = address;
     }
 
-    public Run(): void {
-        while (this.Proceed) {
-            this.Step();
-        }
-    }
-
     public Step(): void {
         this.Execute(this.FetchByte());
     }
