@@ -27,6 +27,7 @@
     "app/StatusBits.ts",
     "app/StatusFlags.ts",
     "app/Symbols.ts",
-    "app/system6502.ts"
+    "app/system6502.ts",
+    "app/Wrapper.ts"
   ]
 }
