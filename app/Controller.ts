@@ -40,6 +40,14 @@ export class Controller {
 
     private _timer: NodeJS.Timer;
 
+    public static get Mega(): number {
+        return 1000000;
+    }
+
+    public static get Milli(): number {
+        return 0.001;
+    }
+
     constructor(configuration: Configuration) {
         this._configuration = configuration;
     }
@@ -52,10 +60,7 @@ export class Controller {
 
     public Configure(): void {
 
-        this._processor = new System6502(
-            this._configuration.ProcessorLevel,
-            this._configuration.Speed,
-            this._configuration.PollIntervalMilliseconds);
+        this._processor = new System6502(this._configuration.ProcessorLevel);
 
         if (this._configuration.Disassemble
                 || this._configuration.StopAddressEnabled
@@ -104,8 +109,8 @@ export class Controller {
         this._disassembler = new Disassembly(this._processor, this._symbols);
         this.Disassembly.add(this.Controller_Disassembly, this);
 
-        this._cyclesPerSecond = this._configuration.Speed * System6502.Mega;     // speed is in MHz
-        this._cyclesPerMillisecond = this._cyclesPerSecond * System6502.Milli;
+        this._cyclesPerSecond = this._configuration.Speed * Controller.Mega;     // speed is in MHz
+        this._cyclesPerMillisecond = this._cyclesPerSecond * Controller.Milli;
         this._cyclesPerInterval = this._cyclesPerMillisecond * this._configuration.PollIntervalMilliseconds;
     }
 
@@ -125,10 +130,8 @@ export class Controller {
         if (actualElapsed > calculatedElapsed) {
             let difference: number = actualElapsed - calculatedElapsed;
             let missedJiffies: number = (difference / this._configuration.PollIntervalMilliseconds) | 0;
-            allowedCycles = missedJiffies * this._cyclesPerInterval;
+            allowedCycles += missedJiffies * this._cyclesPerInterval;
         }
-
-        allowedCycles += this._cyclesPerInterval;
 
         while (this._processor.Proceed && (this._intervalCycles < allowedCycles)) {
             this._processor.Step();

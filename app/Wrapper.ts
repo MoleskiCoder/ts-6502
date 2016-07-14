@@ -2,7 +2,6 @@
 
 import {Configuration} from "./Configuration";
 import {Controller} from "./Controller";
-import {System6502} from "./System6502";
 import {Disassembly} from "./Disassembly";
 
 export class Wrapper {
@@ -24,7 +23,7 @@ export class Wrapper {
 
     private Finished(): void {
 
-        let hertz: number = this._configuration.Speed * System6502.Mega;
+        let hertz: number = this._configuration.Speed * Controller.Mega;
 
         let cycles: number = this._controller.Processor.Cycles;
         // let heldCycles: number = this._controller.Processor.HeldCycles;

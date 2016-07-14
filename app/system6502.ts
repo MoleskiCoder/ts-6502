@@ -11,35 +11,22 @@ export class System6502 extends MOS6502 {
 
     private _startTime: number;
 
-    private _running: boolean = false;
-    private _heldCycles: number = 0;
-
     private _starting: Signal = new Signal();
     private _finished: Signal = new Signal();
     private _polling: Signal = new Signal();
     private _executingInstruction: Signal = new Signal();
     private _executedInstruction: Signal = new Signal();
 
-    public static get Mega(): number {
-        return 1000000;
-    }
-
-    public static get Milli(): number {
-        return 0.001;
-    }
-
     public static get MemorySize(): number {
         return 0x10000;
     }
 
-    constructor(level: ProcessorType, speed: number, pollInterval: number) {
-
+    constructor(level: ProcessorType) {
         super(level);
 
         this._memory = new Memory(System6502.MemorySize);
 
         this.Starting.add(this.System6502_Starting, this);
-        this.Finished.add(this.System6502_Finished, this);
     }
 
     public get Starting(): Signal {
@@ -60,14 +47,6 @@ export class System6502 extends MOS6502 {
 
     public get ExecutedInstruction(): Signal {
         return this._executedInstruction;
-    }
-
-    public get HeldCycles(): number {
-        return this._heldCycles;
-    }
-
-    public get Running(): boolean {
-        return this._running;
     }
 
     public get MemoryBus(): Memory {
@@ -100,10 +79,5 @@ export class System6502 extends MOS6502 {
 
     private System6502_Starting(): void {
         this._startTime = Date.now();
-        this._running = true;
-    }
-
-    private System6502_Finished(): void {
-        this._running = false;
     }
 }
