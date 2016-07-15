@@ -31,6 +31,7 @@ export class Controller {
     private _intervalCycles: number = 0;
 
     private _jiffies: number = 0;
+    private _executingTime: number = 0;     // in 1/1000 second intervals
 
     private _disassembler: Disassembly;
 
@@ -55,6 +56,8 @@ export class Controller {
     public get Processor(): System6502 { return this._processor; }
     public get StartTime(): number { return this._startTime; }
     public get FinishTime(): number { return this._finishTime; }
+    public get ElapsedTime(): number { return this.FinishTime - this.StartTime; }
+    public get ExecutingTime(): number { return this._executingTime; }
 
     public get Disassembly(): Signal { return this._disassembly; }
 
@@ -133,10 +136,13 @@ export class Controller {
             allowedCycles += missedJiffies * this._cyclesPerInterval;
         }
 
+        let start: number[] = process.hrtime();
         while (this._processor.Proceed && (this._intervalCycles < allowedCycles)) {
             this._processor.Step();
             this._intervalCycles += (this._processor.Cycles - this._oldCycles);
         }
+        let elapsed: number[] = process.hrtime(start);
+        this._executingTime += ((elapsed[1] / 1e6) + (1000 * elapsed[0]));
 
         // rather than zero, so we catch any cycle overruns...
         this._intervalCycles -= this._cyclesPerInterval;

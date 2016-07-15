@@ -4,6 +4,8 @@ import {Configuration} from "./Configuration";
 import {Controller} from "./Controller";
 import {Disassembly} from "./Disassembly";
 
+/* tslint:disable:no-bitwise */
+
 export class Wrapper {
 
     private _configuration: Configuration;
@@ -26,22 +28,18 @@ export class Wrapper {
         let hertz: number = this._configuration.Speed * Controller.Mega;
 
         let cycles: number = this._controller.Processor.Cycles;
-        // let heldCycles: number = this._controller.Processor.HeldCycles;
 
         let start: number = this._controller.StartTime;
         let finish: number = this._controller.FinishTime;
 
         let elapsedTime: number = finish - start;
-        let seconds: number = elapsedTime / 1000;
+        let seconds: number = elapsedTime * Controller.Milli;
         let cyclesPerSecond: number = cycles / seconds;
         let simulatedElapsed: number = cycles / hertz;
         let speedup: number = cyclesPerSecond / hertz;
 
-        // let cycleDifference: number = cycles - heldCycles;
-        // let holdProportion: number = cycles / cycleDifference;
-
-        // let hostHertz: number = this._configuration.HostSpeed * System6502.Mega;
-        // let cyclesPerHostCycle: number = hostHertz / (cyclesPerSecond * holdProportion);
+        let executionSeconds: number = this._controller.ExecutingTime * Controller.Milli;
+        let executionProportion: number = (this._controller.ExecutingTime / this._controller.ElapsedTime) * 100 | 0;
 
         console.log(`** Stopped PC=${Disassembly.Dump_WordValue(this._controller.Processor.PC)}`);
 
@@ -64,11 +62,8 @@ export class Wrapper {
         console.log(`Speedup over ${this._configuration.Speed}Mhz 6502 ${speedup}`);
 
         console.log(`Simulated cycles used ${cycles}`);
-        // console.log(`Held cycles ${heldCycles}`);
-        // console.log(`Held cycle difference ${cycleDifference}`);
-        // console.log(`Held proportion ${holdProportion}`);
-        //
-        // console.log(`Cycles per host cycle (code efficiency!) ${cyclesPerHostCycle}`);
+        console.log(`Executing time ${executionSeconds} seconds`);
+        console.log(`Execution proportion ${executionProportion}%`);
 
         console.log(`Simulated time taken ${simulatedElapsed}`);
     }
