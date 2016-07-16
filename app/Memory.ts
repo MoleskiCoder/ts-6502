@@ -1,27 +1,20 @@
 ﻿"use strict";
 
-import {Signal} from "./Signal";
 import {IMemory} from "./IMemory";
 
 import * as FS from "fs";
+import {EventEmitter} from "events";
 
-export class Memory implements IMemory {
+export class Memory extends EventEmitter implements IMemory {
 
     private _memory: number[];
     private _locked: boolean[];
     private _memorySize: number;
 
-    private _invalidWriteAttempt: Signal = new Signal();
-    private _writingByte: Signal = new Signal();
-    private _readingByte: Signal = new Signal();
-
     constructor(memorySize: number) {
+        super();
         this._memorySize = memorySize;
     }
-
-    public get InvalidWriteAttempt(): Signal { return this._invalidWriteAttempt; }
-    public get WritingByte(): Signal { return this._writingByte; }
-    public get ReadingByte(): Signal { return this._readingByte; }
 
     public ClearMemory(): void {
         this._memory = Array(this._memorySize);
@@ -33,16 +26,16 @@ export class Memory implements IMemory {
 
     public GetByte(offset: number): number {
         let content: number = this._memory[offset];
-        this._readingByte.dispatch(offset, content);
+        this.emit("readingByte", offset, content);
         return content;
     }
 
     public SetByte(offset: number, value: number): void {
         if (this._locked[offset]) {
-            this._invalidWriteAttempt.dispatch(offset, value);
+            this.emit("invalidWriteAttempt", offset, value);
         } else {
             this._memory[offset] = value;
-            this._writingByte.dispatch(offset, value);
+            this.emit("writingByte", offset, value);
         }
     }
 

@@ -3,7 +3,6 @@
 import {Memory} from "./Memory";
 import {MOS6502} from "./mos6502";
 import {ProcessorType} from "./ProcessorType";
-import {Signal} from "./Signal";
 
 /* tslint:disable:no-bitwise */
 export class System6502 extends MOS6502 {
@@ -25,12 +24,6 @@ export class System6502 extends MOS6502 {
     private _executingTime: number = 0;     // in 1/1000 second intervals
 
     private _timer: NodeJS.Timer;
-
-    private _starting: Signal = new Signal();
-    private _finished: Signal = new Signal();
-    private _polling: Signal = new Signal();
-    private _executingInstruction: Signal = new Signal();
-    private _executedInstruction: Signal = new Signal();
 
     public static get Mega(): number {
         return 1000000;
@@ -55,29 +48,6 @@ export class System6502 extends MOS6502 {
         this._cyclesPerInterval = this._cyclesPerMillisecond * this._pollInterval;
 
         this._memory = new Memory(System6502.MemorySize);
-
-        this.Starting.add(this.System6502_Starting, this);
-        this.Finished.add(this.System6502_Finished, this);
-    }
-
-    public get Starting(): Signal {
-        return this._starting;
-    }
-
-    public get Finished(): Signal {
-        return this._finished;
-    }
-
-    public get Polling(): Signal {
-        return this._polling;
-    }
-
-    public get ExecutingInstruction(): Signal {
-        return this._executingInstruction;
-    }
-
-    public get ExecutedInstruction(): Signal {
-        return this._executedInstruction;
     }
 
     public get MemoryBus(): Memory {
@@ -96,7 +66,8 @@ export class System6502 extends MOS6502 {
     }
 
     public Run(): void {
-        this.Starting.dispatch();
+        this.emit("starting");
+        this._startTime = Date.now();
         this._timer = setInterval(() => { this.Poll(); }, this._pollInterval);
     }
 
@@ -115,9 +86,9 @@ export class System6502 extends MOS6502 {
 
         this._oldCycles = this.Cycles;
 
-        this.ExecutingInstruction.dispatch(executingAddress, cell);
+        this.emit("executingInstruction", executingAddress, cell);
         super.Execute(cell);
-        this.ExecutedInstruction.dispatch(executingAddress, cell);
+        this.emit("executedInstruction", executingAddress, cell);
     }
 
     protected Poll(): void {
@@ -147,18 +118,14 @@ export class System6502 extends MOS6502 {
 
         // if we've finished processing (for whatever reason),
         if (!this.Proceed) {
+
             // allow the NodeJS loop to exit
             this._timer.unref();
+
+            this._finishTime = Date.now();
+
             // fire the final "finished" event
-            this.Finished.dispatch();
+            this.emit("finished");
         }
-    }
-
-    private System6502_Starting(): void {
-        this._startTime = Date.now();
-    }
-
-    private System6502_Finished(): void {
-        this._finishTime = Date.now();
     }
 }

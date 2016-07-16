@@ -20,7 +20,7 @@ export class Wrapper {
     public Start(): void {
         this._controller.Configure();
 
-        this._controller.Processor.Finished.add(this.Finished, this);
+        this._controller.Processor.on("finished", () => { this.Finished(); });
         this._controller.Start();
     }
 

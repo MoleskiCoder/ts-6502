@@ -5,10 +5,11 @@ import {ProcessorType} from "./ProcessorType";
 import {Instruction} from "./Instruction";
 import {IImplementation} from "./IImplementation";
 import {AddressingMode} from "./AddressingMode";
+import {EventEmitter} from "events";
 
 /* tslint:disable:no-bitwise */
 
-export abstract class MOS6502 {
+export abstract class MOS6502 extends EventEmitter {
 
     private _pc: number;    // program counter
     private _x: number;     // index register X
@@ -29,12 +30,9 @@ export abstract class MOS6502 {
     private _proceed: boolean = true;
 
     private static toSignedByte(unsigned: number): number {
-        // console.assert((unsigned & ~0xff) === 0);
         let unsignedPart: number = unsigned & 0x7f;
         let signedPart: number = unsigned & 0x80;
-        let returnValue: number = unsignedPart - signedPart;
-    	// console.assert((returnValue >= -128) && (returnValue <= 127));
-        return returnValue;
+        return unsignedPart - signedPart;
     }
 
     private static toUnsignedByte(signed: number): number {
@@ -80,6 +78,7 @@ export abstract class MOS6502 {
     public static get NMIvector(): number { return 0xfffa; }
 
     constructor(level: ProcessorType) {
+        super();
         this._level = level;
         this.Install6502Instructions();
         this.Install65sc02Instructions();

@@ -1,14 +1,15 @@
 ﻿"use strict";
 
+import {EventEmitter} from "events";
+
 import {System6502} from "./system6502";
 import {Configuration} from "./Configuration";
 import {Symbols} from "./Symbols";
 import {Disassembly} from "./Disassembly";
-import {Signal} from "./Signal";
 import {Instruction} from "./Instruction";
 import {AddressingMode} from "./AddressingMode";
 
-export class Controller {
+export class Controller extends EventEmitter {
 
     public static get BbcOSLoadAddress(): number { return 0xc000; }
     public static get BbcOSLanguageAddress(): number { return 0x8000; }
@@ -22,14 +23,12 @@ export class Controller {
 
     private _symbols: Symbols;
 
-    private _disassembly: Signal = new Signal();
-
     constructor(configuration: Configuration) {
+        super();
         this._configuration = configuration;
     }
 
     public get Processor(): System6502 { return this._processor; }
-    public get Disassembly(): Signal { return this._disassembly; }
 
     public Configure(): void {
 
@@ -43,15 +42,17 @@ export class Controller {
                 || this._configuration.StopWhenLoopDetected
                 || this._configuration.ProfileAddresses
                 || this._configuration.StopBreak) {
-            this._processor.ExecutingInstruction.add(this.Processor_ExecutingInstruction, this);
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction(address, cell);
+            });
         }
 
-        this._processor.MemoryBus.WritingByte.add(this.Processor_WritingByte, this);
-        this._processor.MemoryBus.ReadingByte.add(this.Processor_ReadingByte, this);
-
-        this._processor.MemoryBus.InvalidWriteAttempt.add(this.Processor_InvalidWriteAttempt, this);
-
-        this._processor.Polling.add(this.Processor_Polling, this);
+        this._processor.MemoryBus.on("writingByte", (address: number, cell: number) => {
+            this.Processor_WritingByte(address, cell);
+        });
+        this._processor.MemoryBus.on("readingByte", (address: number, cell: number) => {
+            this.Processor_ReadingByte(address, cell);
+        });
 
         this._processor.Initialise();
 
@@ -80,7 +81,9 @@ export class Controller {
         this._symbols = new Symbols(this._configuration.DebugFile);
 
         this._disassembler = new Disassembly(this._processor, this._symbols);
-        this.Disassembly.add(this.Controller_Disassembly, this);
+        this._processor.on("disassembly", (output: string) => {
+            this.Controller_Disassembly(output);
+        });
     }
 
     public Start(): void {
@@ -104,7 +107,7 @@ export class Controller {
             let bytes: string = `${Disassembly.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
 
             let disassembly: string = `${state}\t${bytes}\t${this._disassembler.Disassemble(address)}`;
-            this.Disassembly.dispatch(disassembly);
+            this.emit("disassembly", disassembly);
         }
 
         if (this._configuration.StopAddressEnabled && this._configuration.StopAddress === address) {
@@ -141,12 +144,6 @@ export class Controller {
                 this._processor.SetByte(address, 0x0);
             }
         }
-    }
-
-    private Processor_InvalidWriteAttempt(address: number, cell: number): void {
-    }
-
-    private Processor_Polling(): void {
     }
 
     private HandleByteWritten(cell: number): void {
