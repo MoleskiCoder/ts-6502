@@ -8,8 +8,6 @@ import {Signal} from "./Signal";
 import {Instruction} from "./Instruction";
 import {AddressingMode} from "./AddressingMode";
 
-/* tslint:disable:no-bitwise */
-
 export class Controller {
 
     public static get BbcOSLoadAddress(): number { return 0xc000; }
@@ -20,50 +18,25 @@ export class Controller {
 
     private _oldPC: number = 0;
 
-    private _startTime: number;
-    private _finishTime: number;
-
-    private _cyclesPerSecond: number;
-    private _cyclesPerMillisecond: number;
-    private _cyclesPerInterval: number;
-
-    private _oldCycles: number = 0;
-    private _intervalCycles: number = 0;
-
-    private _jiffies: number = 0;
-    private _executingTime: number = 0;     // in 1/1000 second intervals
-
     private _disassembler: Disassembly;
 
     private _symbols: Symbols;
 
     private _disassembly: Signal = new Signal();
 
-    private _timer: NodeJS.Timer;
-
-    public static get Mega(): number {
-        return 1000000;
-    }
-
-    public static get Milli(): number {
-        return 0.001;
-    }
-
     constructor(configuration: Configuration) {
         this._configuration = configuration;
     }
 
     public get Processor(): System6502 { return this._processor; }
-    public get StartTime(): number { return this._startTime; }
-    public get FinishTime(): number { return this._finishTime; }
-    public get ElapsedTime(): number { return this.FinishTime - this.StartTime; }
-    public get ExecutingTime(): number { return this._executingTime; }
-
     public get Disassembly(): Signal { return this._disassembly; }
 
     public Configure(): void {
 
-        this._processor = new System6502(this._configuration.ProcessorLevel);
+        this._processor = new System6502(
+            this._configuration.ProcessorLevel,
+            this._configuration.Speed,
+            this._configuration.PollIntervalMilliseconds);
 
         if (this._configuration.Disassemble
                 || this._configuration.StopAddressEnabled
@@ -77,9 +50,6 @@ export class Controller {
         this._processor.MemoryBus.ReadingByte.add(this.Processor_ReadingByte, this);
 
         this._processor.MemoryBus.InvalidWriteAttempt.add(this.Processor_InvalidWriteAttempt, this);
-
-        this._processor.Starting.add(this.Processor_Starting, this);
-        this._processor.Finished.add(this.Processor_Finished, this);
 
         this._processor.Polling.add(this.Processor_Polling, this);
 
@@ -111,59 +81,10 @@ export class Controller {
 
         this._disassembler = new Disassembly(this._processor, this._symbols);
         this.Disassembly.add(this.Controller_Disassembly, this);
-
-        this._cyclesPerSecond = this._configuration.Speed * Controller.Mega;     // speed is in MHz
-        this._cyclesPerMillisecond = this._cyclesPerSecond * Controller.Milli;
-        this._cyclesPerInterval = this._cyclesPerMillisecond * this._configuration.PollIntervalMilliseconds;
     }
 
     public Start(): void {
-        this._processor.Starting.dispatch();
-        this._timer = setInterval(() => { this.Poll(); }, this._configuration.PollIntervalMilliseconds);
-    }
-
-    private Poll(): void {
-
-        let currentTime: number = Date.now();
-
-        let calculatedElapsed: number = this._configuration.PollIntervalMilliseconds * this._jiffies;
-        let actualElapsed: number = currentTime - this.StartTime;
-
-        let allowedCycles: number = this._cyclesPerInterval;
-        if (actualElapsed > calculatedElapsed) {
-            let difference: number = actualElapsed - calculatedElapsed;
-            let missedJiffies: number = (difference / this._configuration.PollIntervalMilliseconds) | 0;
-            allowedCycles += missedJiffies * this._cyclesPerInterval;
-        }
-
-        let start: number[] = process.hrtime();
-        while (this._processor.Proceed && (this._intervalCycles < allowedCycles)) {
-            this._processor.Step();
-            this._intervalCycles += (this._processor.Cycles - this._oldCycles);
-        }
-        let elapsed: number[] = process.hrtime(start);
-        this._executingTime += ((elapsed[1] / 1e6) + (1000 * elapsed[0]));
-
-        // rather than zero, so we catch any cycle overruns...
-        this._intervalCycles -= this._cyclesPerInterval;
-
-        // if we've finished processing (for whatever reason),
-        if (!this._processor.Proceed) {
-            // allow the NodeJS loop to exit
-            this._timer.unref();
-            // fire the final "finished" event
-            this._processor.Finished.dispatch();
-        }
-
-        ++this._jiffies;
-    }
-
-    private Processor_Starting(): void {
-        this._startTime = Date.now();
-    }
-
-    private Processor_Finished(): void {
-        this._finishTime = Date.now();
+        this._processor.Run();
     }
 
     private Processor_ExecutingInstruction(address: number, cell: number): void {
@@ -201,8 +122,6 @@ export class Controller {
         if (this._configuration.StopBreak && this._configuration.BreakInstruction === cell) {
             this._processor.Proceed = false;
         }
-
-        this._oldCycles = this._processor.Cycles;
     }
 
     private Controller_Disassembly(output: string): void {

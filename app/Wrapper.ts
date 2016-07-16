@@ -2,6 +2,7 @@
 
 import {Configuration} from "./Configuration";
 import {Controller} from "./Controller";
+import {System6502} from "./system6502";
 import {Disassembly} from "./Disassembly";
 
 /* tslint:disable:no-bitwise */
@@ -25,21 +26,21 @@ export class Wrapper {
 
     private Finished(): void {
 
-        let hertz: number = this._configuration.Speed * Controller.Mega;
+        let hertz: number = this._configuration.Speed * System6502.Mega;
 
         let cycles: number = this._controller.Processor.Cycles;
 
-        let start: number = this._controller.StartTime;
-        let finish: number = this._controller.FinishTime;
+        let start: number = this._controller.Processor.StartTime;
+        let finish: number = this._controller.Processor.FinishTime;
 
         let elapsedTime: number = finish - start;
-        let seconds: number = elapsedTime * Controller.Milli;
+        let seconds: number = elapsedTime * System6502.Milli;
         let cyclesPerSecond: number = cycles / seconds;
         let simulatedElapsed: number = cycles / hertz;
         let speedup: number = cyclesPerSecond / hertz;
 
-        let executionSeconds: number = this._controller.ExecutingTime * Controller.Milli;
-        let executionProportion: number = (this._controller.ExecutingTime / this._controller.ElapsedTime) * 100 | 0;
+        let executionSeconds: number = this._controller.Processor.ExecutingTime * System6502.Milli;
+        let executionProportion: number = (this._controller.Processor.ExecutingTime / this._controller.Processor.ElapsedTime) * 100 | 0;
 
         console.log(`** Stopped PC=${Disassembly.Dump_WordValue(this._controller.Processor.PC)}`);
 
