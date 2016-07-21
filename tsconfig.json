@@ -22,8 +22,6 @@
     "app/mos6502.ts",
     "app/ProcessorType.ts",
     "app/Profiler.ts",
-    "app/Signal.ts",
-    "app/SignalBinding.ts",
     "app/StatusBits.ts",
     "app/StatusFlags.ts",
     "app/Symbols.ts",
