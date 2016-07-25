@@ -1,5 +1,6 @@
 {
   "globalDependencies": {
+    "keypress": "registry:dt/keypress#2.0.3+20160317120654",
     "node": "registry:dt/node#6.0.0+20160621231320"
   }
 }

@@ -5,6 +5,8 @@ import {ConfigurationReader} from "./ConfigurationReader";
 
 export class Configuration extends ConfigurationReader {
 
+    private  _debug: boolean = false;
+
     // cpu section
     private _hostSpeed: number = 2900;
 
@@ -50,6 +52,8 @@ export class Configuration extends ConfigurationReader {
 
         super(path);
 
+        this._debug = debug;
+
         if (this.Root.Host !== undefined) {
             if (this.Root.Host.speed !== undefined) {
                 this._hostSpeed = this.Root.Host.speed;
@@ -58,7 +62,7 @@ export class Configuration extends ConfigurationReader {
 
         if (this.Root.CPU !== undefined) {
             if (this.Root.CPU.level !== undefined) {
-                this._processorLevel = this.Root.CPU.level;
+                this._processorLevel = Configuration.ToProcessorType(this.Root.CPU.level, ProcessorType.Cpu6502);
             }
             if (this.Root.CPU.speed !== undefined) {
                 this._speed = this.Root.CPU.speed;
@@ -173,6 +177,8 @@ export class Configuration extends ConfigurationReader {
         }
     }
 
+    public get Debug(): boolean { return this._debug; }
+
     public get HostSpeed(): number { return this._hostSpeed; }
 
     public get ProcessorLevel(): ProcessorType { return this._processorLevel; }
@@ -205,4 +211,12 @@ export class Configuration extends ConfigurationReader {
     public get DebugFile(): string { return this._debugFile; }
     public get CountInstructions(): boolean { return this._countInstructions; }
     public get ProfileAddresses(): boolean { return this._profileAddresses; }
+
+    private static ToProcessorType(value: string, defaultValue: ProcessorType): ProcessorType {
+        let possible: ProcessorType = ProcessorType[value];
+        if (possible === undefined) {
+            return defaultValue;
+        }
+        return possible;
+    }
 }

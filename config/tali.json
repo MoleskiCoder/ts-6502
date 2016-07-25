@@ -14,6 +14,12 @@
 		"resetStart": true
 	},
 	"debug": {
+		"disassemble": true,
+		"countInstructions": true,
+		"profileAddresses": true
+	},
+	"release": {
+		"disassemble": false,
 		"countInstructions": true,
 		"profileAddresses": true
 	}

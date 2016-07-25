@@ -19,7 +19,7 @@
 		"stopBreak": true
 	},
 	"debug": {
-		"disassemble": false,
+		"disassemble": true,
 		"disassemblyLogPath": "c:\\github\\cs\\cs_6502\\sudoku.log",
 		"debugFile": "C:\\github\\6502\\6502_sudoku\\sudoku.dbg",
 		"countInstructions": true,

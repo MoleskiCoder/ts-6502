@@ -7,6 +7,6 @@
     "lint": "tslint -c tslint.json app/*.ts"
   },
   "dependencies": {
-    "sleep": "^3.0.1"
+    "keypress": "^0.2.1"
   }
 }

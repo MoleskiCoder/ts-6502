@@ -1,5 +1,8 @@
 ﻿"use strict";
 
+// import * as keypress from "keypress";
+let keypress: any = require("keypress");
+
 import {EventEmitter} from "events";
 
 import {System6502} from "./system6502";
@@ -22,6 +25,8 @@ export class Controller extends EventEmitter {
     private _disassembler: Disassembly;
 
     private _symbols: Symbols;
+
+    private _keyboardAvailable: boolean = false;
 
     constructor(configuration: Configuration) {
         super();
@@ -88,6 +93,28 @@ export class Controller extends EventEmitter {
 
     public Start(): void {
         this._processor.Run();
+
+        let stdin: any = process.stdin;
+        this._keyboardAvailable = stdin.setRawMode !== undefined;
+        if (this._keyboardAvailable) {
+
+            keypress(process.stdin);
+
+            // send "keypress" events to the input address
+            process.stdin.on("keypress", (ch: string, key: any) => {
+                if (key && key.ctrl && key.name === "c") {
+                    this._processor.Proceed = false;
+                } else {
+                    this._processor.SetByte(this._configuration.InputAddress, ch.charCodeAt(0));
+                }
+            });
+
+            // allow stdin to exit when the emulator has completed
+            this._processor.on("finished", () => { process.stdin.pause(); });
+
+            stdin.setRawMode(true);
+            stdin.resume();
+        }
     }
 
     private Processor_ExecutingInstruction(address: number, cell: number): void {
@@ -207,5 +234,9 @@ export class Controller extends EventEmitter {
     }
 
     private HandleByteRead(cell: number): void {
+        if (this._configuration.Debug) {
+            let character: string = String.fromCharCode(cell);
+            console.log(`Byte read: character=${character}, cell=${cell}`);
+        }
     }
 }
