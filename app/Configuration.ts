@@ -48,6 +48,14 @@ export class Configuration extends ConfigurationReader {
     private _countInstructions: boolean = false;
     private _profileAddresses: boolean = false;
 
+    private static ToProcessorType(value: string, defaultValue: ProcessorType): ProcessorType {
+        let possible: ProcessorType = ProcessorType[value];
+        if (possible === undefined) {
+            return defaultValue;
+        }
+        return possible;
+    }
+
     constructor(path: string, debug: boolean) {
 
         super(path);
@@ -136,7 +144,7 @@ export class Configuration extends ConfigurationReader {
             }
         }
 
-        this._stopAddressEnabled = this._stopAddress != 0;
+        this._stopAddressEnabled = this._stopAddress !== 0;
 
         if (debug) {
             if (this.Root.debug !== undefined) {
@@ -211,12 +219,4 @@ export class Configuration extends ConfigurationReader {
     public get DebugFile(): string { return this._debugFile; }
     public get CountInstructions(): boolean { return this._countInstructions; }
     public get ProfileAddresses(): boolean { return this._profileAddresses; }
-
-    private static ToProcessorType(value: string, defaultValue: ProcessorType): ProcessorType {
-        let possible: ProcessorType = ProcessorType[value];
-        if (possible === undefined) {
-            return defaultValue;
-        }
-        return possible;
-    }
 }
