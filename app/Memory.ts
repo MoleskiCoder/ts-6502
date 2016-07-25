@@ -18,10 +18,16 @@ export class Memory extends EventEmitter implements IMemory {
 
     public ClearMemory(): void {
         this._memory = Array(this._memorySize);
+        for (let i: number = 0; i < this._memorySize; ++i) {
+            this._memory[i] = 0;
+        }
     }
 
     public ClearLocking(): void {
         this._locked = Array(this._memorySize);
+        for (let i: number = 0; i < this._memorySize; ++i) {
+            this._locked[i] = false;
+        }
     }
 
     public GetByte(offset: number): number {
