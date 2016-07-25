@@ -81,7 +81,7 @@ export class Controller extends EventEmitter {
         this._symbols = new Symbols(this._configuration.DebugFile);
 
         this._disassembler = new Disassembly(this._processor, this._symbols);
-        this._processor.on("disassembly", (output: string) => {
+        this.on("disassembly", (output: string) => {
             this.Controller_Disassembly(output);
         });
     }
