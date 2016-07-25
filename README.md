@@ -3,12 +3,10 @@
 
 Features:
 
-* Configurable runtime
-* Disassembler
-* Symbol support for ld65 (from the cc65 suite) debug files
-* Symbolic performance analyser
+* Configurable runtime (Working)
+* Disassembler (Working)
+* Symbol support for ld65 (from the cc65 suite) debug files (Working)
+* Symbolic performance analyser (Not working)
 * BBC Micro
-  * OS and Language ROMS
-  * Skeletal VDU handler
-
-(Not working yet!)
+  * OS and Language ROMS (Working)
+  * Skeletal VDU handler (Working)
