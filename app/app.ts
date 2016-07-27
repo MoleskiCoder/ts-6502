@@ -4,12 +4,12 @@ import {Wrapper} from "./Wrapper";
 
 let debug: boolean = false;
 
-let sudoku: boolean = false;
+let sudoku: boolean = true;
 let testSuiteOne: boolean = false;
 let testSuiteTwo: boolean = false;
 let ehbasic: boolean = false;
 let bbc_forth: boolean = false;
-let tali: boolean = true;
+let tali: boolean = false;
 
 let wrapper: Wrapper;
 

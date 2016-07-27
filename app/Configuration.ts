@@ -49,7 +49,7 @@ export class Configuration extends ConfigurationReader {
     private _profileAddresses: boolean = false;
 
     private static ToProcessorType(value: string, defaultValue: ProcessorType): ProcessorType {
-        let possible: ProcessorType = ProcessorType[value];
+        let possible: ProcessorType = (<any>ProcessorType)[value];
         if (possible === undefined) {
             return defaultValue;
         }

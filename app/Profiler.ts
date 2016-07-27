@@ -1,223 +1,145 @@
-﻿/*namespace Model
-{
-	using System;
-	using System.Collections.Generic;
+﻿"use strict";
 
-	public sealed class Profiler
-	{
-		private readonly ulong[] instructionCounts;
-		private readonly ulong[] addressProfiles;
-		private readonly ulong[] addressCounts;
+import {System6502} from "./system6502";
+import {Disassembly} from "./Disassembly";
+import {Symbols} from "./Symbols";
 
-		private readonly string[] addressScopes;
-		private readonly Dictionary<string, ulong> scopeCycles;
+import {EventEmitter} from "events";
 
-		private readonly Processor.System6502 processor;
-		private readonly Disassembly disassembler;
-		private readonly Symbols symbols;
+export class Profiler extends EventEmitter {
 
-		private readonly bool countInstructions;
-		private readonly bool profileAddresses;
+    private _instructionCounts: number[];
+    private _addressProfiles: number[];
+    private _addressCounts: number[];
 
-		private ulong priorCycleCount = 0;
+    private _addressScopes: string[];
 
-		public Profiler(Processor.System6502 processor, Disassembly disassembler, Symbols symbols, bool countInstructions, bool profileAddresses)
-		{
-			if (processor == null)
-			{
-				throw new ArgumentNullException("processor");
-			}
+    private _scopeCycles: any = {};
 
-			this.processor = processor;
-			this.disassembler = disassembler;
-			this.symbols = symbols;
-			this.countInstructions = countInstructions;
-			this.profileAddresses = profileAddresses;
+    private _processor: System6502;
+    private _disassembler: Disassembly;
+    private _symbols: Symbols ;
 
-			if (countInstructions || profileAddresses)
-			{
-				this.processor.ExecutingInstruction += this.Processor_ExecutingInstruction;
-			}
+    private _countInstructions: boolean;
+    private _profileAddresses: boolean;
 
-			if (profileAddresses)
-			{
-				this.processor.ExecutedInstruction += this.Processor_ExecutedInstruction;
-			}
-			
-			this.instructionCounts = new ulong[0x100];
-			this.addressProfiles = new ulong[0x10000];
-			this.addressCounts = new ulong[0x10000];
+    private _priorCycleCount: number = 0;
 
-			this.addressScopes = new string[0x10000];
-			this.scopeCycles = new Dictionary<string, ulong>();
+    constructor(processor: System6502, disassembler: Disassembly, symbols: Symbols, countInstructions: boolean, profileAddresses: boolean) {
 
-			this.BuildAddressScopes();
-		}
+        super();
 
-		public event EventHandler<EventArgs> StartingOutput;
+        this._processor = processor;
+        this._disassembler = disassembler;
+        this._symbols = symbols;
+        this._countInstructions = countInstructions;
+        this._profileAddresses = profileAddresses;
 
-		public event EventHandler<EventArgs> FinishedOutput;
+        if (countInstructions || profileAddresses) {
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction(address, cell);
+            });
+        }
 
-		public event EventHandler<EventArgs> StartingLineOutput;
+        if (profileAddresses) {
+            this._processor.on("executedInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutedInstruction(address, cell);
+            });
+        }
 
-		public event EventHandler<EventArgs> FinishedLineOutput;
+        this._instructionCounts = Array(0x100);
+        for (let i: number = 0; i < 0x100; ++i) {
+            this._instructionCounts[i] = 0;
+        }
 
-		public event EventHandler<ProfileLineEventArgs> EmitLine;
+        this._addressProfiles = Array(0x10000);
+        this._addressCounts = Array(0x10000);
 
-		public event EventHandler<EventArgs> StartingScopeOutput;
+        this._addressScopes = Array(0x10000);
 
-		public event EventHandler<EventArgs> FinishedScopeOutput;
+        for (let i: number = 0; i < 0x10000; ++i) {
+            this._addressProfiles[i] = 0;
+            this._addressCounts[i] = 0;
+        }
 
-		public event EventHandler<ProfileScopeEventArgs> EmitScope;
+        this.BuildAddressScopes();
+    }
 
-		public void Generate()
-		{
-			this.OnStartingOutput();
-			try
-			{
-				this.EmitProfileInformation();
-			}
-			finally
-			{
-				this.OnFinishedOutput();
-			}
-		}
+    public Generate(): void {
+        this.emit("startingOutput");
+        this.EmitProfileInformation();
+        this.emit("finishedOutput");
+    }
 
-		private void EmitProfileInformation()
-		{
-			this.OnStartingLineOutput();
-			try
-			{
-				// For each memory address
-				for (var i = 0; i < 0x10000; ++i)
-				{
-					// If there are any cycles associated
-					var cycles = this.addressProfiles[i];
-					if (cycles > 0)
-					{
-						var address = (ushort)i;
+    private EmitProfileInformation(): void {
 
-						// Dump a profile/disassembly line
-						var source = this.disassembler.Disassemble(address);
-						this.OnEmitLine(source, cycles);
-					}
-				}
-			}
-			finally
-			{
-				this.OnFinishedLineOutput();
-			}
+        this.emit("startingLineOutput");
+        // for each memory address
+        for (let i: number = 0; i < 0x10000; ++i) {
+            // if there are any cycles associated
+            let cycles: number = this._addressProfiles[i];
+            if (cycles > 0) {
+                // dump a profile/disassembly line
+                let source: string = this._disassembler.Disassemble(i);
+                this.emit("emitLine", source, cycles);
+            }
+        }
+        this.emit("finishedLineOutput");
 
-			this.OnStartingScopeOutput();
-			try
-			{
-				foreach (var scopeCycle in this.scopeCycles)
-				{
-					var name = scopeCycle.Key;
-					var cycles = scopeCycle.Value;
-					var count = this.addressCounts[this.symbols.Addresses[name]];
-					this.OnEmitScope(name, cycles, count);
-				}
-			}
-			finally
-			{
-				this.OnFinishedScopeOutput();
-			}
-		}
+        this.emit("startingScopeOutput");
+        for (let name in this._scopeCycles) {
+            if (this._scopeCycles.hasOwnProperty(name)) {
+                let cycles: number = this._scopeCycles[name];
+                let count: number = this._addressCounts[this._symbols.Addresses[name]];
+                this.emit("emitScope", name, cycles, count);
+            }
+        }
+        this.emit("finishedScopeOutput");
+    }
 
-		private void Processor_ExecutingInstruction(object sender, Processor.AddressEventArgs e)
-		{
-			if (this.profileAddresses)
-			{
-				this.priorCycleCount = this.processor.Cycles;
-				this.addressCounts[e.Address]++;
-			}
+    private Processor_ExecutingInstruction(address: number, cell: number): void {
+        if (this._profileAddresses) {
+            this._priorCycleCount = this._processor.Cycles;
+            this._addressCounts[address]++;
+        }
 
-			if (this.countInstructions)
-			{
-				++this.instructionCounts[e.Cell];
-			}
-		}
+        if (this._countInstructions) {
+            ++this._instructionCounts[cell];
+        }
+    }
 
-		private void Processor_ExecutedInstruction(object sender, Processor.AddressEventArgs e)
-		{
-			if (this.profileAddresses)
-			{
-				var address = e.Address;
-				var cycles = this.processor.Cycles - this.priorCycleCount;
+    private Processor_ExecutedInstruction(address: number, cell: number): void {
+        if (this._profileAddresses) {
+            let cycles: number = this._processor.Cycles - this._priorCycleCount;
 
-				this.addressProfiles[address] += cycles;
+            this._addressProfiles[address] += cycles;
 
-				var addressScope = this.addressScopes[address];
-				if (addressScope != null)
-				{
-					if (!this.scopeCycles.ContainsKey(addressScope))
-					{
-						this.scopeCycles[addressScope] = 0;
-					}
+            let addressScope: string = this._addressScopes[address];
+            if (addressScope !== undefined) {
+                if (!this._scopeCycles.hasOwnProperty(addressScope)) {
+                    this._scopeCycles[addressScope] = 0;
+                }
 
-					this.scopeCycles[addressScope] += cycles;
-				}
-			}
-		}
+                let oldCycles: number = this._scopeCycles[addressScope];
+                let newCycles: number = oldCycles + cycles;
+                this._scopeCycles[addressScope] += cycles;
+                console.assert(this._scopeCycles[addressScope] === newCycles);
+            }
+        }
+    }
 
-		private void BuildAddressScopes()
-		{
-			foreach (var label in this.symbols.Labels)
-			{
-				var address = label.Key;
-				var key = label.Value;
-
-				ushort scope;
-				if (this.symbols.Scopes.TryGetValue(key, out scope))
-				{
-					for (ushort i = address; i < address + scope; ++i)
-					{
-						this.addressScopes[i] = key;
-					}
-				}
-			}
-		}
-
-		private void OnStartingOutput()
-		{
-			this.StartingOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnFinishedOutput()
-		{
-			this.FinishedOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnStartingLineOutput()
-		{
-			this.StartingLineOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnFinishedLineOutput()
-		{
-			this.FinishedLineOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnStartingScopeOutput()
-		{
-			this.StartingScopeOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnFinishedScopeOutput()
-		{
-			this.FinishedScopeOutput?.Invoke(this, EventArgs.Empty);
-		}
-
-		private void OnEmitLine(string source, ulong cycles)
-		{
-			this.EmitLine?.Invoke(this, new ProfileLineEventArgs(source, cycles));
-		}
-
-		private void OnEmitScope(string scope, ulong cycles, ulong count)
-		{
-			this.EmitScope?.Invoke(this, new ProfileScopeEventArgs(scope, cycles, count));
-		}
-	}
+    private BuildAddressScopes(): void {
+        for (let address in this._symbols.Labels) {
+            if (this._symbols.Labels.hasOwnProperty(address)) {
+                let key: string = this._symbols.Labels[address];
+                let scope: number = this._symbols.Scopes[key];
+                if (scope !== undefined) {
+                    let addressInteger: number = parseInt(address, 10);
+                    for (let i: number = addressInteger; i < (addressInteger + scope); ++i) {
+                        this._addressScopes[i] = key;
+                    }
+                }
+            }
+        }
+    }
 }
-*/

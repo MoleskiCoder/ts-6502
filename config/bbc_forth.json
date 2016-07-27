@@ -1,4 +1,7 @@
 {
+	"Host": {
+		"speed": "2900.0"
+	},
 	"CPU": {
 		"level": "cpu6502",
 		"speed": "2.0"
@@ -9,7 +12,7 @@
 	},
 	"BBC": {
 		"language": {
-			"path": "C:\\github\\cpp\\cpp_6502\\FORTH_1.03.rom"
+			"path": "C:\\github\\js\\ts-6502\\config\\FORTH_1.03.rom"
 		},
 		"OS": {
 			"path": "C:\\github\\6502\\6502_mos\\mos.65b"
@@ -21,10 +24,17 @@
 		"stopBreak": true
 	},
 	"debug": {
-		"disassemble": false,
+		"disassemble": true,
 		"disassemblyLogPath": "c:\\github\\cs\\cs_6502\\bbc_forth.log",
 		"debugFile": "C:\\github\\6502\\6502_mos\\mos.dbg",
 		"countInstructions": true,
 		"profileAddresses": true
+	},
+	"release": {
+		"disassemble": false,
+		"disassemblyLogPath": "c:\\github\\cs\\cs_6502\\bbc_forth.log",
+		"debugFile": "C:\\github\\6502\\6502_mos\\mos.dbg",
+		"countInstructions": false,
+		"profileAddresses": false
 	}
 }

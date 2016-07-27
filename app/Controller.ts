@@ -11,6 +11,7 @@ import {Symbols} from "./Symbols";
 import {Disassembly} from "./Disassembly";
 import {Instruction} from "./Instruction";
 import {AddressingMode} from "./AddressingMode";
+import {Profiler} from "./Profiler";
 
 export class Controller extends EventEmitter {
 
@@ -24,9 +25,40 @@ export class Controller extends EventEmitter {
 
     private _disassembler: Disassembly;
 
+    private _profiler: Profiler;
+
     private _symbols: Symbols;
 
     private _keyboardAvailable: boolean = false;
+
+
+    private static Profiler_FinishedScopeOutput(): void {
+        console.log("Finished profiler scope output...");
+    }
+
+    private static Profiler_StartingScopeOutput(): void {
+        console.log("Starting profiler scope output...");
+    }
+
+    private static Profiler_FinishedLineOutput(): void {
+        console.log("Finished profiler line output...");
+    }
+
+    private static Profiler_StartingLineOutput(): void  {
+        console.log("Starting profiler line output...");
+    }
+
+    private static Profiler_FinishedOutput(): void {
+        console.log("Finished profiler output...");
+    }
+
+    private static Profiler_StartingOutput(): void {
+        console.log("Starting profiler output...");
+    }
+
+    private static Controller_Disassembly(output: string): void {
+        console.log(output);
+    }
 
     constructor(configuration: Configuration) {
         super();
@@ -59,6 +91,10 @@ export class Controller extends EventEmitter {
             this.Processor_ReadingByte(address, cell);
         });
 
+        this._processor.on("finished", () => {
+            this._profiler.Generate();
+        });
+
         this._processor.Initialise();
 
         let bbc: boolean = (this._configuration.BbcLanguageRomPath.length > 0) && (this._configuration.BbcOSRomPath.length > 0);
@@ -87,7 +123,26 @@ export class Controller extends EventEmitter {
 
         this._disassembler = new Disassembly(this._processor, this._symbols);
         this.on("disassembly", (output: string) => {
-            this.Controller_Disassembly(output);
+            Controller.Controller_Disassembly(output);
+        });
+
+        this._profiler = new Profiler(
+            this._processor,
+            this._disassembler,
+            this._symbols,
+            this._configuration.CountInstructions,
+            this._configuration.ProfileAddresses);
+        this._profiler.on("startingOutput", () => { Controller.Profiler_StartingOutput(); });
+        this._profiler.on("finishedOutput", () => { Controller.Profiler_FinishedOutput(); });
+        this._profiler.on("startingLineOutput", () => { Controller.Profiler_StartingLineOutput(); });
+        this._profiler.on("finishedLineOutput", () => { Controller.Profiler_FinishedLineOutput(); });
+        this._profiler.on("startingScopeOutput", () => { Controller.Profiler_StartingScopeOutput(); });
+        this._profiler.on("finishedScopeOutput", () => { Controller.Profiler_FinishedScopeOutput(); });
+        this._profiler.on("emitLine", (source: string, cycles: number) => {
+            this.Profiler_EmitLine(source, cycles);
+        });
+        this._profiler.on("emitScope", (scope: string, cycles: number, count: number) => {
+            this.Profiler_EmitScope(scope, cycles, count);
         });
     }
 
@@ -120,7 +175,7 @@ export class Controller extends EventEmitter {
     private Processor_ExecutingInstruction(address: number, cell: number): void {
 
         if (this._configuration.Disassemble) {
-            let cycles: string = Disassembly.pad(this._processor.Cycles, 10, 9);
+            let cycles: string = Disassembly.pad(this._processor.Cycles, 9);
             let hexAddress: string = Disassembly.Dump_WordValue(address);
             let p: string = this._processor.P.toString();
             let a: string = Disassembly.Dump_ByteValue(this._processor.A);
@@ -152,10 +207,6 @@ export class Controller extends EventEmitter {
         if (this._configuration.StopBreak && this._configuration.BreakInstruction === cell) {
             this._processor.Proceed = false;
         }
-    }
-
-    private Controller_Disassembly(output: string): void {
-        console.log(output);
     }
 
     private Processor_WritingByte(address: number, cell: number): void {
@@ -238,5 +289,17 @@ export class Controller extends EventEmitter {
             let character: string = String.fromCharCode(cell);
             console.log(`Byte read: character=${character}, cell=${cell}`);
         }
+    }
+
+    private Profiler_EmitScope(scope: string, cycles: number, count: number): void {
+        let proportion: number = cycles / this._processor.Cycles;
+        let proportionPercentage: string = (proportion * 100).toFixed(2);
+        console.log(`\t[${proportionPercentage}%][${Disassembly.pad(cycles, 9)}][${Disassembly.pad(count, 9)}]\t${scope}`);
+    }
+
+    private Profiler_EmitLine(source: string, cycles: number): void {
+        let proportion: number = cycles / this._processor.Cycles;
+        let proportionPercentage: string = (proportion * 100).toFixed(2);
+        console.log(`\t[${proportionPercentage}%][${Disassembly.pad(cycles, 9)}]\t${source}`);
     }
 }

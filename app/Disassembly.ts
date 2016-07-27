@@ -13,14 +13,17 @@ export class Disassembly {
     private _dumpers: any = {};
 
     public static Dump_ByteValue(value: number): string {
-        return Disassembly.pad(value, 16, 2);
+        return Disassembly.pad(value, 2, 16);
     }
 
     public static Dump_WordValue(value: number): string {
-        return Disassembly.pad(value, 16, 4);
+        return Disassembly.pad(value, 4, 16);
     }
 
-    public static pad(value: number, base: number, width: number, zero?: string): string {
+    public static pad(value: number, width: number, base?: number, zero?: string): string {
+        if (base === undefined) {
+            base = 10;
+        }
         if (zero === undefined) {
             zero = "0";
         }
@@ -106,7 +109,7 @@ export class Disassembly {
     private ConvertWordAddress(address: number): string {
         let label: string = this._symbols.Labels[address];
         if (label === undefined) {
-            return `$${Disassembly.pad(address, 16, 4)}`;
+            return `$${Disassembly.pad(address, 4, 16)}`;
         }
         return label;
     }
@@ -114,7 +117,7 @@ export class Disassembly {
     private ConvertByteAddress(address: number): string {
         let label: string = this._symbols.Labels[address];
         if (label === undefined) {
-            return `$${Disassembly.pad(address, 16, 2)}`;
+            return `$${Disassembly.pad(address, 2, 16)}`;
         }
         return label;
     }
@@ -122,7 +125,7 @@ export class Disassembly {
     private ConvertWordConstant(constant: number): string {
         let label: string = this._symbols.Constants[constant];
         if (label === undefined) {
-            return `$${Disassembly.pad(constant, 16, 4)}`;
+            return `$${Disassembly.pad(constant, 4, 16)}`;
         }
         return label;
     }
@@ -130,7 +133,7 @@ export class Disassembly {
     private ConvertByteConstant(constant: number): string {
         let label: string = this._symbols.Constants[constant];
         if (label === undefined) {
-            return `$${Disassembly.pad(constant, 16, 2)}`;
+            return `$${Disassembly.pad(constant, 2, 16)}`;
         }
         return label;
     }
