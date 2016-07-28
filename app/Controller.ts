@@ -4,6 +4,7 @@
 let keypress: any = require("keypress");
 
 import {EventEmitter} from "events";
+import * as FS from "fs";
 
 import {System6502} from "./system6502";
 import {Configuration} from "./Configuration";
@@ -12,6 +13,7 @@ import {Disassembly} from "./Disassembly";
 import {Instruction} from "./Instruction";
 import {AddressingMode} from "./AddressingMode";
 import {Profiler} from "./Profiler";
+import {WriteStream} from "fs";
 
 export class Controller extends EventEmitter {
 
@@ -24,6 +26,7 @@ export class Controller extends EventEmitter {
     private _oldPC: number = 0;
 
     private _disassembler: Disassembly;
+    private _disassemblyLog: WriteStream;
 
     private _profiler: Profiler;
 
@@ -54,10 +57,6 @@ export class Controller extends EventEmitter {
 
     private static Profiler_StartingOutput(): void {
         console.log("Starting profiler output...");
-    }
-
-    private static Controller_Disassembly(output: string): void {
-        console.log(output);
     }
 
     constructor(configuration: Configuration) {
@@ -91,7 +90,16 @@ export class Controller extends EventEmitter {
             this.Processor_ReadingByte(address, cell);
         });
 
+        this._processor.on("starting", () => {
+            if (this._configuration.DisassemblyLogPath !== "") {
+                this._disassemblyLog = FS.createWriteStream(this._configuration.DisassemblyLogPath);
+            }
+        });
+
         this._processor.on("finished", () => {
+            if (this._disassemblyLog !== undefined) {
+                this._disassemblyLog.end();
+            }
             this._profiler.Generate();
         });
 
@@ -123,7 +131,7 @@ export class Controller extends EventEmitter {
 
         this._disassembler = new Disassembly(this._processor, this._symbols);
         this.on("disassembly", (output: string) => {
-            Controller.Controller_Disassembly(output);
+            this.Controller_Disassembly(output);
         });
 
         this._profiler = new Profiler(
@@ -301,5 +309,14 @@ export class Controller extends EventEmitter {
         let proportion: number = cycles / this._processor.Cycles;
         let proportionPercentage: string = (proportion * 100).toFixed(2);
         console.log(`\t[${proportionPercentage}%][${Disassembly.pad(cycles, 9)}]\t${source}`);
+    }
+
+    private Controller_Disassembly(output: string): void {
+        if (this._configuration.Debug) {
+            console.log(output);
+        }
+        if (this._disassemblyLog !== undefined) {
+            this._disassemblyLog.write(`${output}\n`);
+        }
     }
 }
