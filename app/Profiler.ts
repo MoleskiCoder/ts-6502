@@ -120,10 +120,7 @@ export class Profiler extends EventEmitter {
                     this._scopeCycles[addressScope] = 0;
                 }
 
-                let oldCycles: number = this._scopeCycles[addressScope];
-                let newCycles: number = oldCycles + cycles;
                 this._scopeCycles[addressScope] += cycles;
-                console.assert(this._scopeCycles[addressScope] === newCycles);
             }
         }
     }
