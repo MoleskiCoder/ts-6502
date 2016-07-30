@@ -4,10 +4,10 @@ import * as FS from "fs";
 
 export class Symbols {
 
-    private _labels: any;
-    private _constants: any;
-    private _scopes: any;
-    private _addresses: any;
+    private _labels: { [address: number]: string; } = {};
+    private _constants: { [equate: number]: string; } = {};
+    private _scopes: { [name: string]: number; } = {};
+    private _addresses: { [name: string]: number; } = {};
 
     private _parsed: any;
 
@@ -16,13 +16,7 @@ export class Symbols {
     }
 
     constructor(path: string) {
-
         this._parsed = {};
-        this._labels = {};
-        this._constants = {};
-        this._scopes = {};
-        this._addresses = {};
-
         if (path.length > 0) {
             this.Parse(path);
             this.AssignSymbols();
@@ -30,18 +24,18 @@ export class Symbols {
         }
     }
 
-    public get Labels(): any { return this._labels; }
-    public get Constants(): any { return this._constants; }
-    public get Scopes(): any { return this._scopes; }
-    public get Addresses(): any { return this._addresses; }
+    public get Labels(): {} { return this._labels; }
+    public get Constants(): {} { return this._constants; }
+    public get Scopes(): {} { return this._scopes; }
+    public get Addresses(): {} { return this._addresses; }
 
     private AssignScopes(): void {
-        let parsedScopes: any = this._parsed.scope;
+        let parsedScopes: {} = this._parsed.scope;
         for (let key in parsedScopes) {
             if (parsedScopes.hasOwnProperty(key)) {
-                let parsedScope: any = parsedScopes[key];
-                let name: string = Symbols.trimQuotes(parsedScope.name);
-                let size: string = parsedScope.size;
+                let parsedScope: {} = (<any>parsedScopes)[key];
+                let name: string = Symbols.trimQuotes((<any>parsedScope).name);
+                let size: string = (<any>parsedScope).size;
                 this._scopes[name] = parseInt(size, 10);
             }
         }

@@ -10,7 +10,7 @@ export class Disassembly {
 
     private _processor: MOS6502;
     private _symbols: Symbols;
-    private _dumpers: any = {};
+    private _dumpers: { [mode: number]: AddressingModeDumper; } = {};
 
     public static Dump_ByteValue(value: number): string {
         return Disassembly.pad(value, 2, 16);
@@ -29,8 +29,7 @@ export class Disassembly {
         }
         let converted: string = value.toString(base);
         let length: number = converted.length;
-        let padded: string = length >= width ? converted : new Array(width - length + 1).join(zero) + converted;
-        return padded;
+        return length >= width ? converted : new Array(width - length + 1).join(zero) + converted;
     }
 
     constructor(processor: MOS6502 , symbols: Symbols ) {
