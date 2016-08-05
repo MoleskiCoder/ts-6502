@@ -90,7 +90,7 @@ export class Profiler extends EventEmitter {
         for (let name in this._scopeCycles) {
             if (this._scopeCycles.hasOwnProperty(name)) {
                 let cycles: number = this._scopeCycles[name];
-                let count: number = this._addressCounts[this._symbols.Addresses[name]];
+                let count: number = this._addressCounts[(<any>this._symbols.Addresses)[name]];
                 this.emit("emitScope", name, cycles, count);
             }
         }
@@ -128,8 +128,8 @@ export class Profiler extends EventEmitter {
     private BuildAddressScopes(): void {
         for (let address in this._symbols.Labels) {
             if (this._symbols.Labels.hasOwnProperty(address)) {
-                let key: string = this._symbols.Labels[address];
-                let scope: number = this._symbols.Scopes[key];
+                let key: string = (<any>this._symbols.Labels)[address];
+                let scope: number = (<any>this._symbols.Scopes)[key];
                 if (scope !== undefined) {
                     let addressInteger: number = parseInt(address, 10);
                     for (let i: number = addressInteger; i < (addressInteger + scope); ++i) {

@@ -32,13 +32,21 @@ export class Disassembly {
         return length >= width ? converted : new Array(width - length + 1).join(zero) + converted;
     }
 
+    private static Dump_Nothing(unused: number ): string {
+        return "";
+    }
+
+    private static Dump_A(unused: number): string {
+        return "A";
+    }
+
     constructor(processor: MOS6502 , symbols: Symbols ) {
         this._processor = processor;
         this._symbols = symbols;
 
-        this._dumpers[AddressingMode.Illegal] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_Nothing);
-        this._dumpers[AddressingMode.Implied] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_Nothing);
-        this._dumpers[AddressingMode.Accumulator] = new AddressingModeDumper(this.Dump_Nothing, this.Dump_A);
+        this._dumpers[AddressingMode.Illegal] = new AddressingModeDumper(Disassembly.Dump_Nothing, Disassembly.Dump_Nothing);
+        this._dumpers[AddressingMode.Implied] = new AddressingModeDumper(Disassembly.Dump_Nothing, Disassembly.Dump_Nothing);
+        this._dumpers[AddressingMode.Accumulator] = new AddressingModeDumper(Disassembly.Dump_Nothing, Disassembly.Dump_A);
         this._dumpers[AddressingMode.Immediate] = new AddressingModeDumper(this.Dump_Byte, this.Dump_imm);
         this._dumpers[AddressingMode.Relative] = new AddressingModeDumper(this.Dump_Byte, this.Dump_rel);
         this._dumpers[AddressingMode.XIndexed] = new AddressingModeDumper(this.Dump_Byte, this.Dump_xind);
@@ -68,7 +76,7 @@ export class Disassembly {
 
         let operand: string = this.DumpOperand(mode, current + 1);
 
-        let label: string = this._symbols.Labels[current];
+        let label: string = (<any>this._symbols.Labels)[current];
         if (label === undefined) {
             return `${mnemonic} ${operand}`;
         }
@@ -91,10 +99,6 @@ export class Disassembly {
 
     ////
 
-    private Dump_Nothing(unused: number ): string {
-        return "";
-    }
-
     private Dump_Byte(address: number): string {
         return Disassembly.Dump_ByteValue(this.GetByte(address));
     }
@@ -106,7 +110,7 @@ export class Disassembly {
     ////
 
     private ConvertWordAddress(address: number): string {
-        let label: string = this._symbols.Labels[address];
+        let label: string = (<any>this._symbols.Labels)[address];
         if (label === undefined) {
             return `$${Disassembly.pad(address, 4, 16)}`;
         }
@@ -114,23 +118,23 @@ export class Disassembly {
     }
 
     private ConvertByteAddress(address: number): string {
-        let label: string = this._symbols.Labels[address];
+        let label: string = (<any>this._symbols.Labels)[address];
         if (label === undefined) {
             return `$${Disassembly.pad(address, 2, 16)}`;
         }
         return label;
     }
 
-    private ConvertWordConstant(constant: number): string {
-        let label: string = this._symbols.Constants[constant];
-        if (label === undefined) {
-            return `$${Disassembly.pad(constant, 4, 16)}`;
-        }
-        return label;
-    }
+    // private ConvertWordConstant(constant: number): string {
+    //     let label: string = (<any>this._symbols.Constants)[constant];
+    //     if (label === undefined) {
+    //         return `$${Disassembly.pad(constant, 4, 16)}`;
+    //     }
+    //     return label;
+    // }
 
     private ConvertByteConstant(constant: number): string {
-        let label: string = this._symbols.Constants[constant];
+        let label: string = (<any>this._symbols.Constants)[constant];
         if (label === undefined) {
             return `$${Disassembly.pad(constant, 2, 16)}`;
         }
@@ -138,10 +142,6 @@ export class Disassembly {
     }
 
     ////
-
-    private Dump_A(unused: number): string {
-        return "A";
-    }
 
     private Dump_imm(current: number): string {
         let immediate: number = this.GetByte(current);
