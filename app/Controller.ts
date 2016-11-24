@@ -73,13 +73,24 @@ export class Controller extends EventEmitter {
             this._configuration.Speed,
             this._configuration.PollIntervalMilliseconds);
 
-        if (this._configuration.Disassemble
-                || this._configuration.StopAddressEnabled
-                || this._configuration.StopWhenLoopDetected
-                || this._configuration.ProfileAddresses
-                || this._configuration.StopBreak) {
+        if (this._configuration.Disassemble) {
             this._processor.on("executingInstruction", (address: number, cell: number) => {
-                this.Processor_ExecutingInstruction(address, cell);
+                this.Processor_ExecutingInstruction_Disassemble(address, cell);
+            });
+        }
+        if (this._configuration.StopAddressEnabled) {
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction_StopAddress(address, cell);
+            });
+        }
+        if (this._configuration.StopWhenLoopDetected) {
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction_StopLoop(address, cell);
+            });
+        }
+        if (this._configuration.StopBreak) {
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction_StopBreak(address, cell);
             });
         }
 
@@ -182,39 +193,40 @@ export class Controller extends EventEmitter {
         }
     }
 
-    private Processor_ExecutingInstruction(address: number, cell: number): void {
+    private Processor_ExecutingInstruction_Disassemble(address: number, cell: number): void {
+        let cycles: string = Disassembly.pad(this._processor.Cycles, 9);
+        let hexAddress: string = Disassembly.Dump_WordValue(address);
+        let p: string = this._processor.P.toString();
+        let a: string = Disassembly.Dump_ByteValue(this._processor.A);
+        let x: string = Disassembly.Dump_ByteValue(this._processor.X);
+        let y: string = Disassembly.Dump_ByteValue(this._processor.Y);
+        let s: string = Disassembly.Dump_ByteValue(this._processor.S);
+        let state: string = `[${cycles}] PC=${hexAddress}:P=${p}, A=${a}, X=${x}, Y=${y}, S=${s}`;
 
-        if (this._configuration.Disassemble) {
-            let cycles: string = Disassembly.pad(this._processor.Cycles, 9);
-            let hexAddress: string = Disassembly.Dump_WordValue(address);
-            let p: string = this._processor.P.toString();
-            let a: string = Disassembly.Dump_ByteValue(this._processor.A);
-            let x: string = Disassembly.Dump_ByteValue(this._processor.X);
-            let y: string = Disassembly.Dump_ByteValue(this._processor.Y);
-            let s: string = Disassembly.Dump_ByteValue(this._processor.S);
-            let state: string = `[${cycles}] PC=${hexAddress}:P=${p}, A=${a}, X=${x}, Y=${y}, S=${s}`;
+        let instruction: Instruction = this._processor.Instructions[cell];
+        let mode: AddressingMode = instruction.Mode;
+        let bytes: string = `${Disassembly.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
 
-            let instruction: Instruction = this._processor.Instructions[cell];
-            let mode: AddressingMode = instruction.Mode;
-            let bytes: string = `${Disassembly.Dump_ByteValue(cell)}${this._disassembler.DumpBytes(mode, address + 1)}`;
+        let disassembly: string = `${state}\t${bytes}\t${this._disassembler.Disassemble(address)}`;
+        this.emit("disassembly", disassembly);
+    }
 
-            let disassembly: string = `${state}\t${bytes}\t${this._disassembler.Disassemble(address)}`;
-            this.emit("disassembly", disassembly);
-        }
-
-        if (this._configuration.StopAddressEnabled && this._configuration.StopAddress === address) {
+    private Processor_ExecutingInstruction_StopAddress(address: number, cell: number): void {
+        if (this._configuration.StopAddress === address) {
             this._processor.Proceed = false;
         }
+    }
 
-        if (this._configuration.StopWhenLoopDetected) {
-            if (this._oldPC === this._processor.PC) {
-                this._processor.Proceed = false;
-            } else {
-                this._oldPC = this._processor.PC;
-            }
+    private Processor_ExecutingInstruction_StopLoop(address: number, cell: number): void {
+        if (this._oldPC === this._processor.PC) {
+            this._processor.Proceed = false;
+        } else {
+            this._oldPC = this._processor.PC;
         }
+    }
 
-        if (this._configuration.StopBreak && this._configuration.BreakInstruction === cell) {
+    private Processor_ExecutingInstruction_StopBreak(address: number, cell: number): void {
+        if (this._configuration.BreakInstruction === cell) {
             this._processor.Proceed = false;
         }
     }

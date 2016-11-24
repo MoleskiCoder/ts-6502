@@ -35,15 +35,21 @@ export class Profiler extends EventEmitter {
         this._countInstructions = countInstructions;
         this._profileAddresses = profileAddresses;
 
-        if (countInstructions || profileAddresses) {
+        if (countInstructions) {
             this._processor.on("executingInstruction", (address: number, cell: number) => {
-                this.Processor_ExecutingInstruction(address, cell);
+                this.Processor_ExecutingInstruction_ProfileAddresses(address, cell);
+            });
+        }
+
+        if (profileAddresses) {
+            this._processor.on("executingInstruction", (address: number, cell: number) => {
+                this.Processor_ExecutingInstruction_CountInstructions(address, cell);
             });
         }
 
         if (profileAddresses) {
             this._processor.on("executedInstruction", (address: number, cell: number) => {
-                this.Processor_ExecutedInstruction(address, cell);
+                this.Processor_ExecutedInstruction_ProfileAddresses(address, cell);
             });
         }
 
@@ -97,31 +103,27 @@ export class Profiler extends EventEmitter {
         this.emit("finishedScopeOutput");
     }
 
-    private Processor_ExecutingInstruction(address: number, cell: number): void {
-        if (this._profileAddresses) {
-            this._priorCycleCount = this._processor.Cycles;
-            this._addressCounts[address]++;
-        }
-
-        if (this._countInstructions) {
-            ++this._instructionCounts[cell];
-        }
+    private Processor_ExecutingInstruction_ProfileAddresses(address: number, cell: number): void {
+        this._priorCycleCount = this._processor.Cycles;
+        this._addressCounts[address]++;
     }
 
-    private Processor_ExecutedInstruction(address: number, cell: number): void {
-        if (this._profileAddresses) {
-            let cycles: number = this._processor.Cycles - this._priorCycleCount;
+    private Processor_ExecutingInstruction_CountInstructions(address: number, cell: number): void {
+        ++this._instructionCounts[cell];
+    }
 
-            this._addressProfiles[address] += cycles;
+    private Processor_ExecutedInstruction_ProfileAddresses(address: number, cell: number): void {
+        let cycles: number = this._processor.Cycles - this._priorCycleCount;
 
-            let addressScope: string = this._addressScopes[address];
-            if (addressScope !== undefined) {
-                if (!this._scopeCycles.hasOwnProperty(addressScope)) {
-                    this._scopeCycles[addressScope] = 0;
-                }
+        this._addressProfiles[address] += cycles;
 
-                this._scopeCycles[addressScope] += cycles;
+        let addressScope: string = this._addressScopes[address];
+        if (addressScope !== undefined) {
+            if (!this._scopeCycles.hasOwnProperty(addressScope)) {
+                this._scopeCycles[addressScope] = 0;
             }
+
+            this._scopeCycles[addressScope] += cycles;
         }
     }
 
