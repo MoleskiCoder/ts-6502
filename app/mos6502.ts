@@ -1024,10 +1024,10 @@ export abstract class MOS6502 extends EventEmitter {
     }
 
     private UpdateZeroNegativeFlags(datum: number): void {
-        if (this.UpdateZeroFlag(datum)) {
-            this.P.Negative = false;
+        if (this.UpdateNegativeFlag(MOS6502.toSignedByte(datum))) {
+            this.P.Zero = false;
         } else {
-            this.UpdateNegativeFlag(MOS6502.toSignedByte(datum));
+            this.UpdateZeroFlag(datum);
         }
     }
 
