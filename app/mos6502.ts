@@ -8,8 +8,12 @@ import {AddressingMode} from "./AddressingMode";
 import {EventEmitter} from "events";
 
 /* tslint:disable:no-bitwise */
+/* tslint:disable:no-empty */
 
 export abstract class MOS6502 extends EventEmitter {
+
+    private _stopped: boolean;  // control STP
+    private _waiting: boolean;  // control WAI
 
     private _pc: number;    // program counter
     private _x: number;     // index register X
@@ -85,6 +89,12 @@ export abstract class MOS6502 extends EventEmitter {
         this.Install65c02Instructions();
     }
 
+    public get Stopped(): boolean { return this._stopped; }
+    public set Stopped(value: boolean) { this._stopped = value; }
+
+    public get Waiting(): boolean { return this._waiting; }
+    public set Waiting(value: boolean) { this._waiting = value; }
+
     public get Level(): ProcessorType { return this._level; }
 
     public get Proceed(): boolean { return this._proceed; }
@@ -116,6 +126,7 @@ export abstract class MOS6502 extends EventEmitter {
     public Initialise(): void {
         this.Cycles = 0;
         this.ResetRegisters();
+        this.Stopped = this.Waiting = false;
     }
 
     public Start(address: number): void {
@@ -128,6 +139,7 @@ export abstract class MOS6502 extends EventEmitter {
 
     public Reset(): void {
         this.PC = this.GetWord(MOS6502.RSTvector);
+        this.Stopped = this.Waiting = false;
     }
 
     public TriggerIRQ(): void {
@@ -151,6 +163,7 @@ export abstract class MOS6502 extends EventEmitter {
     protected Interrupt(vector: number): void {
         this.PushWord(this.PC);
         this.PushByte(this.P.toNumber());
+        this.Waiting = false;
         this.P.Interrupt = true;
         this.PC = this.GetWord(vector);
     }
@@ -2337,11 +2350,11 @@ export abstract class MOS6502 extends EventEmitter {
     // halt and wait
 
     private WAI_imp(): void {
-        throw new RangeError("WAI not implemented");
+        this.Waiting = true;
     }
 
     private STP_imp(): void {
-        throw new RangeError("STP not implemented");
+        this.Stopped = true;
     }
 
     // flags
