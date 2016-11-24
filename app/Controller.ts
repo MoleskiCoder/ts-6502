@@ -168,7 +168,9 @@ export class Controller extends EventEmitter {
                 if (key && key.ctrl && key.name === "c") {
                     this._processor.Proceed = false;
                 } else {
-                    this._processor.SetByte(this._configuration.InputAddress, ch.charCodeAt(0));
+                    if (ch !== undefined) {
+                        this._processor.SetByte(this._configuration.InputAddress, ch.charCodeAt(0));
+                    }
                 }
             });
 
